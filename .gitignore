@@ -1,4 +1,2 @@
 .DS_STORE
-Dockerfile
-docker-compose.yml
-build_image.sh
+run.sh
