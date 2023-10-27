@@ -26,19 +26,14 @@ minimizing('o').        %%% the player playing o is always trying to minimize th
 run :-
     hello,          %%% Display welcome message, initialize game
 
-    play(1),        %%% Play the game starting with player 1
+    not(play(1)),        %%% Play the game starting with player 1
 
     goodbye         %%% Display end of game message
     .
 
-run :-
-    goodbye
-    .
-
-
 hello :-
     initialize,
-%    cls,
+%   cls,
     nl,
     nl,
     nl,
@@ -66,25 +61,28 @@ goodbye :-
     output_winner(B),
     retract(board(_)),
     retract(player(_,_)),
-    read_play_again(V), !,
-    (V == 'Y' ; V == 'y'), 
-    !,
-    run
-    .
+    read_play_again(V),
+    process_play_again_response(V).
 
-    read_play_again(V) :-
+process_play_again_response('y') :-
+    run.
+
+process_play_again_response('n') :-
+    true.
+
+read_play_again(V) :-
     nl,
     nl,
-    write('Play again (Y/N)? '),
+    write('Play again (y/n)? '),
     read(V),
-    (V == 'y' ; V == 'Y' ; V == 'n' ; V == 'N'), !
+    (V == 'y' ; V == 'n'), !
     .
 
 
 read_play_again(V) :-
     nl,
     nl,
-    write('Please enter Y or N.'),
+    write('Please enter y or n.'),
     read_play_again(V)
     .
 
@@ -186,25 +184,12 @@ diagonal_win(Player, Board) :-
     diagonal_up(Board, Player);
     diagonal_down(Board, Player).
 
-% Base case: empty matrix corresponds to an empty diagonal.
-isDiagonal([], []).
-
-% If Matrix is [[A|Row]|Rest], and A is the head of the Diagonal, then:
-% the recursive call checks the tail of the Matrix against the tail of the Diagonal.
-isDiagonal([[A|_]|Rest], [A|DiagTail]) :-
-    shiftRow(Rest, NewRest),
-    isDiagonal(NewRest, DiagTail).
-
-% Shift each row by dropping the first element
-shiftRow([], []).
-shiftRow([[_|T]|Rest], [T|NewRest]) :-
-    shiftRow(Rest, NewRest).
-
-
 diagonal_down(Board, Player) :-
-    isDiagonal(Board, Diagonal),
-    sublist([Player, Player, Player, Player], Diagonal),
-    !.
+    between(1, 18, Index),
+    square(Board, Index, Player),
+    square(Board,Index+8,Player),
+    square(Board,Index+16,Player),
+    square(Board,Index+24,Player).
 
 diagonal_up(Board, Player) :-
     reverse(Board, Reversed),
@@ -378,13 +363,13 @@ replace_empty(X, [H|T], [H|R]) :-
 %
 
 utility(B,U) :-
-    win(B,'x'),
+    win('x',B),
     U = 1, 
     !
     .
 
 utility(B,U) :-
-    win(B,'o'),
+    win('o',B),
     U = (-1), 
     !
     .
@@ -417,14 +402,14 @@ output_players :-
 
 
 output_winner(B) :-
-    win(B,x),
-    write('X wins.'),
+    win('x',B),
+    write('Player 1 (x) wins.'),
     !
     .
 
 output_winner(B) :-
-    win(B,o),
-    write('O wins.'),
+    win('o',B),
+    write('Player 2 (o) wins.'),
     !
     .
 
