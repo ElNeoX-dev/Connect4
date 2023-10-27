@@ -19,43 +19,36 @@ blank_mark('e').        %%% the mark used in an empty square
 maximizing('x').        %%% the player playing x is always trying to maximize the utility of the board position
 minimizing('o').        %%% the player playing o is always trying to minimize the utility of the board position
 
+/*
+corner_square(1, 1).    %%% map corner squares to board squares
+corner_square(2, 7).
+corner_square(3, 35).
+corner_square(4, 42).
+*/
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%   MAIN PROGRAM   %%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 run :-
-    hello,          %%% Display welcome message, initialize game
-
-    play(1),        %%% Play the game starting with player 1
-
-    goodbye         %%% Display end of game message
-    .
-
-run :-
-    goodbye
-    .
-
-
-hello :-
-    initialize,
-%    cls,
-    nl,
-    nl,
-    nl,
-    write('Welcome to Connect 4.'),
+    initialize,          %%% Display welcome message, initialize game
+    write('Welcome to Connect 4!'),
     read_players,
-    output_players
+    output_players,
+    play(1)        %%% Play the game starting with player 1
     .
+
 
 initialize :-
     random_seed,          %%% use current time to initialize random number generator
     blank_mark(E),
-    asserta(board([[E,E,E,E,E,E,E], 
+%    asserta( board([E,E,E,E,E,E,E, E,E,E,E,E,E,E, E,E,E,E,E,E,E, E,E,E,E,E,E,E, E,E,E,E,E,E,E, E,E,E,E,E,E,E]) )  %%% create a blank board
+    asserta( board([[E,E,E,E,E,E,E], 
                     [E,E,E,E,E,E,E], 
                     [E,E,E,E,E,E,E], 
                     [E,E,E,E,E,E,E], 
                     [E,E,E,E,E,E,E], 
-                    [E,E,E,E,E,E,E]]))  %%% create a blank board
+                    [E,E,E,E,E,E,E]]) )  %%% create a blank board
     .
 
 goodbye :-
@@ -63,16 +56,16 @@ goodbye :-
     nl,
     nl,
     write('Game over: '),
-    output_winner(B),
-    retract(board(_)),
-    retract(player(_,_)),
-    read_play_again(V), !,
-    (V == 'Y' ; V == 'y'), 
-    !,
+%    output_winner(B),
+%    retract(board(_)),
+%    retract(player(_,_)),
+%    read_play_again(V), !,
+%    (V == 'Y' ; V == 'y'), 
+%    !,
     run
     .
 
-    read_play_again(V) :-
+read_play_again(V) :-
     nl,
     nl,
     write('Play again (Y/N)? '),
@@ -143,11 +136,70 @@ human_playing(M) :-
 play(P) :-
     board(B), !,
     output_board(B), !,
-    not(game_over(P, B)), !,
-    make_move(P, B), !,
-    next_player(P, P2), !,
-    play(P2), !
+    %not(game_over(P, B)), !,
+    %make_move(P, B), !,
+    %next_player(P, P2), !,
+    %play(P2), !
+    play_game('x', B),
+    output_board(B), !
     .
+
+
+
+% Make a move in the game, replacing the first empty cell from the bottom.
+make_move(Player, Column, Board, NewBoard) :-
+    valid_move(Column, Board),
+    play_move(Player, Column, Board, NewBoard).
+
+% Check if a move is valid (the column is not full).
+% Takes the nth1 column of the board
+% And checks if there is an empty cell in it.
+valid_move(Column, Board) :-
+    nth1(Column, Board, ColumnList), 
+    member('e', ColumnList).
+
+% Play a move and update the game board.
+play_move(Player, Column, Board, NewBoard) :-
+    transpose(Board, TransposedBoard),
+    nth1(Column, TransposedBoard, ColumnList),
+    reverse(ColumnList, ReversedColumn),  % Reverse to work from the bottom
+    replace_empty(Player, ReversedColumn, ReversedNewColumn),
+    reverse(ReversedNewColumn, NewColumn),
+    replace_in_list(Column, NewColumn, TransposedBoard, UpdatedTransposedBoard),
+    transpose(UpdatedTransposedBoard, NewBoard),
+    write('Done'), nl.
+
+% Replace an item in a list with a new item based on the index.
+replace_in_list(Index, Value, Original, Replaced) :-
+    nth1(Index, Original, _, WithoutOldValue),
+    nth1(Index, Replaced, Value, WithoutOldValue).
+
+% Replace the first empty cell in a list with a given value.
+replace_empty(X, [H|T], [X|T]) :-
+    H = 'e'.
+replace_empty(X, [H|T], [H|R]) :-
+    H \= 'e',
+    replace_empty(X, T, R).
+
+
+% Play the game.
+play_game(Player, Board) :-
+    write('Player '), write(Player), write('\'s turn.'), nl,
+    repeat,  % This starts a repeat loop, which will continue until a valid input is provided.
+    write('Enter column (1-7) to make your move: '),
+    read(Column),
+    (Column >= 1, Column =< 7 ->  % Check if Column is within the valid range.
+        make_move(Player, Column, Board, NewBoard),
+        write('Move played'), nl, nl,
+        output_board(NewBoard),
+        (win(Player, NewBoard) -> write('Player '), write(Player), write(' wins!'), nl;
+         switch_player(Player, NextPlayer),
+         write('Next player: '), write(NextPlayer), nl, nl,
+         play_game(NextPlayer, NewBoard))
+    ;
+        write('Invalid column. Please enter a number between 1 and 7.'), nl,
+        fail  % This causes the repeat loop to restart.
+    ).
 
 
 %.......................................
@@ -186,29 +238,13 @@ diagonal_win(Player, Board) :-
     diagonal_up(Board, Player);
     diagonal_down(Board, Player).
 
-% Base case: empty matrix corresponds to an empty diagonal.
-isDiagonal([], []).
-
-% If Matrix is [[A|Row]|Rest], and A is the head of the Diagonal, then:
-% the recursive call checks the tail of the Matrix against the tail of the Diagonal.
-isDiagonal([[A|_]|Rest], [A|DiagTail]) :-
-    shiftRow(Rest, NewRest),
-    isDiagonal(NewRest, DiagTail).
-
-% Shift each row by dropping the first element
-shiftRow([], []).
-shiftRow([[_|T]|Rest], [T|NewRest]) :-
-    shiftRow(Rest, NewRest).
-
+diagonal_up(Board, Player) :-
+    append(_, [Diagonal|_], Board),
+    sublist([Player, Player, Player, Player], Diagonal).
 
 diagonal_down(Board, Player) :-
-    isDiagonal(Board, Diagonal),
-    sublist([Player, Player, Player, Player], Diagonal),
-    !.
-
-diagonal_up(Board, Player) :-
     reverse(Board, Reversed),
-    diagonal_down(Reversed, Player).
+    diagonal_up(Reversed, Player).
 
 sublist(SubList, List) :-
     append(_, Temp, List),
@@ -270,7 +306,9 @@ game_over2(P, B) :-
 
 game_over2(P, B) :-
     blank_mark(E),
-    \+ (between(1, 42, S), square(B, S, E)). %%% game is over if board is full
+    not(square(B,S,E))     %%% game is over if board is full
+    .
+
 
 %.......................................
 % make_move
@@ -278,24 +316,18 @@ game_over2(P, B) :-
 % requests next move from human/computer, 
 % then applies that move to the given board
 %
-
-% Make a move in the game, replacing the first empty cell from the bottom.
-make_move3(Player, S, Board, NewBoard) :-
-    valid_move(S, Board),
-    play_move(Player, S, Board, NewBoard).
-
-
+/*
 make_move(P, B) :-
     player(P, Type),
 
     make_move2(Type, P, B, B2),
 
-    retract(board(_)),
-    asserta(board(B2))
+    retract( board(_) ),
+    asserta( board(B2) )
     .
 
-
 make_move2(human, P, B, B2) :-
+    nl,
     nl,
     write('Player '),
     write(P),
@@ -305,14 +337,15 @@ make_move2(human, P, B, B2) :-
     blank_mark(E),
     square(B, S, E),
     player_mark(P, M),
+    move(B, S, M, B2), !
+    .
 
-    (S >= 1, S =< 7 ->  % Check if Column is within the valid range.
-        make_move3(M, S, B, B2), !
-    ;
-        write('Invalid column. Please enter a number between 1 and 7.'), nl,
-        fail
-    ).
-    
+make_move2(human, P, B, B2) :-
+    nl,
+    nl,
+    write('Please select a numbered square.'),
+    make_move2(human,P,B,B2)
+    .
 
 make_move2(computer, P, B, B2) :-
     nl,
@@ -331,44 +364,32 @@ make_move2(computer, P, B, B2) :-
     write('.')
     .
 
-
+*/
 %.......................................
 % moves
 %.......................................
 % retrieves a list of available columns
 %
 
-% Check if a move is valid (the column is not full).
-% Takes the nth1 column of the board
-% And checks if there is an empty cell in it.
-valid_move(S, Board) :-
-    nth1(S, Board, ColumnList), 
-    member('e', ColumnList).
+% moves(B,L) :-
+%    not(win(B,x)),                %%% if either player already won, then there are no available moves
+%    not(win(B,o)),
+%    blank_mark(E),
+%    findall(N, square(B,N,E), L), 
+%    L \= []
+%    .
 
-% Play a move and update the game board.
-play_move(Player, S, Board, NewBoard) :-
-    transpose(Board, TransposedBoard),
-    nth1(S, TransposedBoard, ColumnList),
-    reverse(ColumnList, ReversedColumn),  % Reverse to work from the bottom
-    replace_empty(Player, ReversedColumn, ReversedNewColumn),
-    reverse(ReversedNewColumn, NewColumn),
-    replace_in_list(S, NewColumn, TransposedBoard, UpdatedTransposedBoard),
-    transpose(UpdatedTransposedBoard, NewBoard)
-    % write(NewBoard), nl, 
-    % write('Done'), nl
-    .
+moves(B, L) :-
+    not(win(B, x)),
+    not(win(B, o)),
+    findall(Col, can_move_in_column(B, Col), L),
+    L \= [].
 
-% Replace an item in a list with a new item based on the index.
-replace_in_list(Index, Value, Original, Replaced) :-
-    nth1(Index, Original, _, WithoutOldValue),
-    nth1(Index, Replaced, Value, WithoutOldValue).
+% Predicate to check if a move can be made in a given column
+can_move_in_column(B, Col) :-
+    nth1(Col, B, Column),
+    member(empty, Column).  % There's still an empty spot in this column
 
-% Replace the first empty cell in a list with a given value.
-replace_empty(X, [H|T], [X|T]) :-
-    H = 'e'.
-replace_empty(X, [H|T], [H|R]) :-
-    H \= 'e',
-    replace_empty(X, T, R).
 
 
 %.......................................
@@ -439,6 +460,103 @@ print_line(Line) :-
 
 print_col(Col) :- format("~w ", [Col]).
 
+/*
+output_board(B) :-
+    nl,
+    nl,
+    output_square(B,1),
+    write('|'),
+    output_square(B,2),
+    write('|'),
+    output_square(B,3),
+    write('|'),
+    output_square(B,4),
+    write('|'),
+    output_square(B,5),
+    write('|'),
+    output_square(B,6),
+    write('|'),
+    output_square(B,7),
+    nl,
+    .
+    
+    
+    
+output_board :-
+    board(B),
+    output_board(B), !
+    .
+
+output_square(B,S) :-
+    square(B,S,M),
+    write(' '), 
+    output_square2(S,M),  
+    write(' '), !
+    .
+
+output_square2(S, E) :- 
+    blank_mark(E),
+    write(S), !              %%% if square is empty, output the square number
+    .
+
+output_square2(S, M) :- 
+    write(M), !              %%% if square is marked, output the mark
+    .
+
+
+% Afficher une seule case.
+output_square([H|_], 1) :- !, write(H).
+output_square([_|T], N) :-
+    N > 1,
+    N1 is N-1,
+    output_square(T, N1).
+
+% Afficher une seule ligne.
+output_row([], _).
+output_row([H|T], N) :-
+    output_square(H, N),
+    (T \= [] -> write('|') ; true),
+    output_row(T, N).
+
+% Afficher le tableau.
+output_board([]).
+output_board([H|T]) :-
+    length(H, Length),
+    output_row(H, Length),
+    nl,
+    (T \= [] -> write('------') ; true), nl, % ligne de séparation
+    output_board(T).
+
+
+output_value(D,S,U) :-
+    D == 1,
+    nl,
+    write('Square '),
+    write(S),
+    write(', utility: '),
+    write(U), !
+    .
+
+output_value(D,S,U) :- 
+    true
+    .
+
+*/
+
+/*
+output_square(B, S) :-
+    square(B, S, M),
+    write(' '),
+    output_square2(S, M),
+    write(' '), !.
+
+output_square2(S, E) :- 
+    blank_mark(E),
+    write(S), !.
+
+output_square2(_, M) :- 
+    write(M), !.
+*/
 
 output_square(B, S, M) :-
     write(' '),
@@ -472,7 +590,7 @@ output_row(B, [H|T], N, S) :-
 output_board(B) :-
     write(' 1   2   3   4   5   6   7 '), nl,
     output_board(B, 1),
-    write_blue('–––––––––––––––––––––––––––'), nl, nl.
+    write_blue('–––––––––––––––––––––––––––'), nl.
 
 output_board([], _).
 output_board([H|T], N) :-
@@ -641,3 +759,38 @@ get_item2( [_|T], N, A, V) :-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% End of program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+/*
+% Initial game state with an empty board.
+initial_board([
+    [' ', ' ', ' ', ' ', ' ', ' ', ' '],
+    [' ', ' ', ' ', ' ', ' ', ' ', ' '],
+    [' ', ' ', ' ', ' ', ' ', ' ', ' '],
+    [' ', ' ', ' ', ' ', ' ', ' ', ' '],
+    [' ', ' ', ' ', ' ', ' ', ' ', ' '],
+    [' ', ' ', ' ', ' ', ' ', ' ', ' ']
+]).
+*/
+
+/*
+% Display the game board.
+display_board(Board) :-
+    nl,
+    write('  1 2 3 4 5 6 7'), nl,
+    display_rows(Board, 1).
+
+display_rows([], _).
+
+display_rows([Row | RestRows], RowNumber) :-
+    write('|'),
+    display_row(Row),
+    nl,
+    NextRowNumber is RowNumber + 1,
+    display_rows(RestRows, NextRowNumber).
+
+display_row([]) :- write(' ').
+
+display_row([Cell | RestCells]) :-
+    write(Cell),
+    write('|'),
+    display_row(RestCells).
+*/
