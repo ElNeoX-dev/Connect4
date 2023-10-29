@@ -327,7 +327,8 @@ make_move2(computer, P, B, B2) :-
 % Takes the nth1 column of the board
 % And checks if there is an empty cell in it.
 valid_move(S, Board) :-
-    nth1(S, Board, ColumnList), 
+    transpose(Board,TransposedBoard),
+    nth1(S, TransposedBoard, ColumnList),
     member('e', ColumnList).
 
 % Play a move and update the game board.
