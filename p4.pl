@@ -9,7 +9,7 @@ inverse_mark('x', 'o'). %%% determines the opposite of the given mark
 inverse_mark('o', 'x').
 
 player_mark(1, 'x').    %%% the mark for the given player
-player_mark(2, 'o').    
+player_mark(2, 'o').
 
 opponent_mark(1, 'o').  %%% shorthand for the inverse mark of the given player
 opponent_mark(2, 'x').
@@ -45,11 +45,11 @@ hello :-
 initialize :-
     random_seed,          %%% use current time to initialize random number generator
     blank_mark(E),
-    asserta(board([[E,E,E,E,E,E,E], 
-                    [E,E,E,E,E,E,E], 
-                    [E,E,E,E,E,E,E], 
-                    [E,E,E,E,E,E,E], 
-                    [E,E,E,E,E,E,E], 
+    asserta(board([[E,E,E,E,E,E,E],
+                    [E,E,E,E,E,E,E],
+                    [E,E,E,E,E,E,E],
+                    [E,E,E,E,E,E,E],
+                    [E,E,E,E,E,E,E],
                     [E,E,E,E,E,E,E]]))  %%% create a blank board
     .
 
@@ -95,7 +95,7 @@ read_players :-
     set_players(N)
     .
 
-set_players(0) :- 
+set_players(0) :-
     asserta( player(1, computer) ),
     asserta( player(2, computer) ), !
     .
@@ -107,7 +107,7 @@ set_players(1) :-
     human_playing(M), !
     .
 
-set_players(2) :- 
+set_players(2) :-
     asserta( player(1, human) ),
     asserta( player(2, human) ), !
     .
@@ -119,13 +119,13 @@ set_players(N) :-
     .
 
 
-human_playing(M) :- 
+human_playing(M) :-
     (M == 'x' ; M == 'X'),
     asserta( player(1, human) ),
     asserta( player(2, computer) ), !
     .
 
-human_playing(M) :- 
+human_playing(M) :-
     (M == 'o' ; M == 'O'),
     asserta( player(1, computer) ),
     asserta( player(2, human) ), !
@@ -231,7 +231,7 @@ column_pos(B, Col, Row, S) :-
 column_pos(B, Col, Row, S) :-
     Row > 1,
     NewRow is Row - 1,
-    column_pos(B, Col, NewRow, S).  
+    column_pos(B, Col, NewRow, S).
     
 move(B,Col,M,B2) :-
     column_pos(Col, S),
@@ -260,7 +260,7 @@ game_over2(P, B) :-
 %.......................................
 % make_move
 %.......................................
-% requests next move from human/computer, 
+% requests next move from human/computer,
 % then applies that move to the given board
 %
 
@@ -304,7 +304,9 @@ make_move2(computer, P, B, B2) :-
     nl,
     write('Computer is thinking about next move...'),
     player_mark(P, M),
-    minimax(0, B, M, S, U),
+    trace,
+    minimax(B, M, S, U),
+    notrace,
     move(B,S,M,B2),
 
     nl,
@@ -340,7 +342,7 @@ play_move(Player, S, Board, NewBoard) :-
     reverse(ReversedNewColumn, NewColumn),
     replace_in_list(S, NewColumn, TransposedBoard, UpdatedTransposedBoard),
     transpose(UpdatedTransposedBoard, NewBoard)
-    % write(NewBoard), nl, 
+    % write(NewBoard), nl,
     % write('Done'), nl
     .
 
@@ -365,13 +367,13 @@ replace_empty(X, [H|T], [H|R]) :-
 
 utility(B,U) :-
     win('x',B),
-    U = 1, 
+    U = 1,
     !
     .
 
 utility(B,U) :-
     win('o',B),
-    U = (-1), 
+    U = (-1),
     !
     .
 
@@ -386,7 +388,7 @@ utility(B,U) :-
 % displays the board
 
 
-output_players :- 
+output_players :-
     nl,
     player(1, V1),
     write('Player 1 is '),   %%% either human or computer
@@ -395,7 +397,7 @@ output_players :-
     nl,
     player(2, V2),
     write('Player 2 is '),   %%% either human or computer
-    write(V2), 
+    write(V2),
     nl,
     nl,
     !
@@ -468,13 +470,13 @@ output_board([H|T], N) :-
     output_board(T, N1).
 
 
-write_red(Text) :- 
+write_red(Text) :-
     format('~c[31m~w~c[0m', [27, Text, 27]).
 
-write_yellow(Text) :-     
+write_yellow(Text) :-
     format('~c[32m~w~c[0m', [27, Text, 27]).
 
-write_blue(Text) :- 
+write_blue(Text) :-
     format('~c[34m~w~c[0m', [27, Text, 27]).
 
 
@@ -484,7 +486,7 @@ write_blue(Text) :-
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% PSEUDO-RANDOM NUMBERS 
+%%% PSEUDO-RANDOM NUMBERS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %.......................................
@@ -517,7 +519,7 @@ random_seed(N) :-
 
 arity_prolog___random_seed(N) :-
     nonvar(N),
-    randomize(N), 
+    randomize(N),
     !
     .
 
@@ -525,7 +527,7 @@ arity_prolog___random_seed(N) :-
     var(N),
     time(time(Hour,Minute,Second,Tick)),
     N is ( (Hour+1) * (Minute+1) * (Second+1) * (Tick+1)),
-    randomize(N), 
+    randomize(N),
     !
     .
 
@@ -549,7 +551,7 @@ random_int_1n(N, V) :-
 
 arity_prolog___random_int_1n(N, V) :-
     R is random,
-    V2 is (R * N) - 0.5,           
+    V2 is (R * N) - 0.5,
     float_text(V2,V3,fixed(0)),
     int_text(V4,V3),
     V is V4 + 1,
@@ -581,19 +583,19 @@ set_item(L, N, V, L2) :-
     set_item2(L, N, V, 1, L2)
         .
 
-set_item2( [], N, V, A, L2) :- 
-    N == -1, 
+set_item2( [], N, V, A, L2) :-
+    N == -1,
     L2 = []
     .
 
-set_item2( [_|T1], N, V, A, [V|T2] ) :- 
+set_item2( [_|T1], N, V, A, [V|T2] ) :-
     A = N,
     A1 is N + 1,
     set_item2( T1, -1, V, A1, T2 )
     .
 
-set_item2( [H|T1], N, V, A, [H|T2] ) :- 
-    A1 is A + 1, 
+set_item2( [H|T1], N, V, A, [H|T2] ) :-
+    A1 is A + 1,
     set_item2( T1, N, V, A1, T2 )
     .
 
@@ -608,12 +610,12 @@ get_item(L, N, V) :-
     get_item2(L, N, 1, V)
     .
 
-get_item2( [], _N, _A, V) :- 
+get_item2( [], _N, _A, V) :-
     V = [], !,
     fail
         .
 
-get_item2( [H|_T], N, A, V) :- 
+get_item2( [H|_T], N, A, V) :-
     A = N,
     V = H
     .
@@ -622,6 +624,202 @@ get_item2( [_|T], N, A, V) :-
     A1 is A + 1,
     get_item2( T, N, A1, V)
     .
+    
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% UTILITY 2
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Simplified utility evaluation
+utility2(Board, U) :-
+    (   win('x', Board) -> U = 1.0
+    ;   win('o', Board) -> U = -1.0
+    ;   near_winning_position(Board, 'x') -> U = 0.5
+    ;   near_winning_position(Board, 'o') -> U = -0.5
+    ;   threats_difference(Board, U)
+    ).
+
+% Compute the difference in potential threats
+threats_difference(Board, U) :-
+    count_potential_threats(Board, 'x', PThreats),
+    count_potential_threats(Board, 'o', OThreats),
+    U is (PThreats - OThreats) * 0.01.
+
+% Check for near-winning positions
+near_winning_position(Board, Player) :-
+    (   near_winning_line(Board, Player)
+    ;   near_winning_line(transpose(Board), Player)  % Check vertical by transposing
+    ;   near_winning_diagonal(Board, Player)
+    ).
+
+% Check for near-winning lines (horizontal/vertical)
+near_winning_line(Board, Player) :-
+    member(Line, Board),
+    three_and_one_empty(Player, Line).
+
+% Check for three of a kind and one empty slot
+three_and_one_empty(Player, Line) :-
+    append(_, [A, B, C, D | _], Line),
+    select(empty, [A, B, C, D], Three),
+    all_same(Player, Three).
+
+% Confirm all elements in a list match Player
+all_same(Player, [H | T]) :-
+    H = Player,
+    all_same(Player, T).
+all_same(_, []).
+
+% Count potential threats
+count_potential_threats(Board, Player, Count) :-
+    findall(1, potential_threat(Board, Player), Threats),
+    length(Threats, Count).
+
+% Define potential threat without explicitly creating a list
+potential_threat(Board, Player) :-
+    between(1, 7, Col),
+    column(Board, Col, ColumnData),
+    empty_slot(ColumnData, Row),
+    make_move(Board, [Row, Col], Player, NewBoard),
+    near_winning_position(NewBoard, Player).
+
+% Find the first empty slot in a column
+empty_slot(ColumnData, Row) :-
+    nth1(Row, ColumnData, empty).
+
+% Get the nth column of a board
+column(Board, N, Column) :-
+    maplist(nth1(N), Board, Column).
+
+% Check for near-winning diagonals
+near_winning_diagonal(Board, Player) :-
+    (   diagonal(Board, Player, Diagonal),
+        three_and_one_empty(Player, Diagonal)
+    ;   diagonal(reversed_board(Board), Player, Diagonal),
+        three_and_one_empty(Player, Diagonal)
+    ).
+
+% Extract diagonal from the board
+diagonal(Board, Player, Diagonal) :-
+    findall(Cell, (between(1, 4, N), nth1(N, Board, Row), nth1(N, Row, Cell)), Diagonal).
+
+% Reverse the board to check the other diagonal
+reversed_board(Board, Reversed) :-
+    maplist(reverse, Board, ReversedRows),
+    reverse(ReversedRows, Reversed).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% AI
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   
+
+%.......................................
+% minimax
+%.......................................
+
+% Minimax algorithm with debugging
+minimax(Board, Player, BestMove, BestScore) :-
+    write('Minimax called for player: '), write(Player), nl,
+    findall(Move, valid_move(Move, Board), Moves),
+    write('Possible moves: '), write(Moves), nl,
+    best_move(Board, Moves, Player, null, -inf, BestMove, BestScore),
+    write('Best move chosen: '), write(BestMove), write(' with score: '), write(BestScore), nl.
+
+best_move(_, [], _, BestMove, BestScore, BestMove, BestScore) :-
+    write('No moves left. Best move so far: '), write(BestMove), write(' with score: '), write(BestScore), nl.
+best_move(Board, [Move|Moves], Player, CurrentBestMove, CurrentBestScore, BestMove, BestScore) :-
+    write('Evaluating move: '), write(Move), nl,
+    move(Board, Move, Player, NewBoard),
+    minimax_score(NewBoard, Player, Score),
+    write('Score for move '), write(Move), write(': '), write(Score), nl,
+    better_move(Player, Move, Score, CurrentBestMove, CurrentBestScore, NextBestMove, NextBestScore),
+    best_move(Board, Moves, Player, NextBestMove, NextBestScore, BestMove, BestScore).
+
+% Calculate score for the given board and player
+minimax_score(Board, Player, Score) :-
+    write('Calculating minimax score for player: '), write(Player), nl,
+    utility2(Board, Score),
+    write('Calculated score: '), write(Score), nl.
+
+% Check if the given score is better than the current best score
+better_score(Player, Score1, Score2) :-
+    maximizing(Player) -> Score1 > Score2 ; Score1 < Score2.
+
+% Determine if the current move is better than the best one so far
+better_move(Player, Move1, Score1, CurrentBestMove, CurrentBestScore, Move1, Score1) :-
+    write('Comparing '), write(Score1), write(' with '), write(CurrentBestScore), nl,
+    better_score(Player, Score1, CurrentBestScore),
+    write('Move '), write(Move1), write(' with score '), write(Score1), write(' is better than current best.'), nl.
+better_move(Player, _, Score1, CurrentBestMove, CurrentBestScore, CurrentBestMove, CurrentBestScore) :-
+    \+ better_score(Player, Score1, CurrentBestScore),
+    write('Current best move '), write(CurrentBestMove), write(' with score '), write(CurrentBestScore), write(' remains the best.'), nl.
+
+
+
+
+/*
+minimax(Board, Player, BestMove, BestScore) :-
+    write('minimax called for player '), write(Player), nl,
+    findall(Move, valid_move(Move, Board), Moves),
+    write('Valid moves found: '), write(Moves), nl,
+    best_move(Board, Moves, Player, BestMove, BestScore),
+    write('Best move: '), write(BestMove), write(' with score '), write(BestScore), nl.
+
+best_move(Board, [Move|Moves], Player, BestMove, BestScore) :-
+    write('Evaluating move: '), write(Move), nl,
+    move(Board, Move, Player, NewBoard),     % make_move3(Player, Move, Board, NewBoard),
+    write('After move: '), write(Move), nl,
+    write('Before Opponent Player: '), write(Player), nl,
+    inverse_mark(Player, Opponent),
+    
+    write('Before minimax_score: '), write(Opponent), nl,
+    minimax_score(NewBoard, Opponent, Score),
+    write('Score for move '), write(Move), write(': '), write(Score), nl,
+    
+    best_move(Board, Moves, Player, OtherMove, OtherScore),
+    better_move(Player, Move, Score, OtherMove, OtherScore, BestMove, BestScore).
+
+best_move(_, [], _, null, -inf) :-
+    write('No more moves left, returning -infinity'), nl.
+
+minimax_score(Board, Player, Score) :-
+    game_over(Player, Board), % Assuming game_over also returns a reason
+    write('Game over '), nl,
+    utility2(Board, Score),
+    write('Utility score for board: '), write(Score), nl,
+    !.
+
+minimax_score(Board, Player, Score) :-
+    inverse_mark(Player, Opponent),
+    findall(OppMove, valid_move(OppMove, Board), OppMoves),
+    write('Opponent moves found: '), write(OppMoves), nl,
+    best_opp_move(Board, OppMoves, Opponent, _, OppScore),
+    Score is -OppScore,
+    write('Opponent score: '), write(OppScore), write(', Score: '), write(Score), nl.
+
+best_opp_move(Board, [Move|Moves], Opponent, BestMove, BestScore) :-
+    write('Evaluating opponent move: '), write(Move), nl,
+    move(Board, Move, Opponent, NewBoard),    % make_move3(Opponent, Move, Board, NewBoard),
+    minimax_score(NewBoard, Opponent, Score),
+    best_opp_move(Board, Moves, Opponent, OtherMove, OtherScore),
+    better_move(Opponent, Move, Score, OtherMove, OtherScore, BestMove, BestScore).
+
+best_opp_move(_, [], _, null, inf) :-
+    write('No more opponent moves left, returning infinity'), nl.
+
+better_move(Player, Move1, Score1, Move2, Score2, Move1, Score1) :-
+    write('Comparing scores: '), write(Score1), write(' vs '), write(Score2), nl,
+    better_score(Player, Score1, Score2),
+    write(Move1), write(' is a better move than '), write(Move2), nl,
+    !.
+
+better_move(_, _, _, Move2, Score2, Move2, Score2) :-
+    write('Defaulting to move '), write(Move2), nl.
+
+better_score(Player, Score1, Score2) :-
+    write('Checking if player '), write(Player), write(' should maximize or minimize'), nl,
+    (maximizing(Player) -> Score1 > Score2 ; Score1 < Score2),
+    write('Better score for player '), write(Player), write(' is '), write(Score1), nl.
+*/
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
