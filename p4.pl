@@ -304,10 +304,9 @@ make_move2(computer, P, B, B2) :-
     nl,
     write('Computer is thinking about next move...'),
     player_mark(P, M),
-    trace,
     minimax(B, M, S, U),
-    notrace,
-    move(B,S,M,B2),
+    % move(B,S,M,B2), 
+    make_move3(M, S, B, B2),
 
     nl,
     nl,
@@ -315,8 +314,8 @@ make_move2(computer, P, B, B2) :-
     write(M),
     write(' in square '),
     write(S),
-    write('.')
-    .
+    write('.'),
+    nl.
 
 
 %.......................................
@@ -721,14 +720,23 @@ minimax(Board, Player, BestMove, BestScore) :-
     write('Minimax called for player: '), write(Player), nl,
     findall(Move, valid_move(Move, Board), Moves),
     write('Possible moves: '), write(Moves), nl,
-    best_move(Board, Moves, Player, null, -inf, BestMove, BestScore),
+    (
+        maximizing(Player) -> 
+        InitialScore = -inf;
+        minimizing(Player) -> 
+        InitialScore = inf
+    ),
+    best_move(Board, Moves, Player, null, InitialScore, BestMove, BestScore),
     write('Best move chosen: '), write(BestMove), write(' with score: '), write(BestScore), nl.
 
 best_move(_, [], _, BestMove, BestScore, BestMove, BestScore) :-
     write('No moves left. Best move so far: '), write(BestMove), write(' with score: '), write(BestScore), nl.
 best_move(Board, [Move|Moves], Player, CurrentBestMove, CurrentBestScore, BestMove, BestScore) :-
     write('Evaluating move: '), write(Move), nl,
-    move(Board, Move, Player, NewBoard),
+    % move(Board, Move, Player, NewBoard),
+    make_move3(Player, Move, Board, NewBoard),
+    write('After move: '), write(Move), nl,
+    write('Before score: '), write(Player), nl,
     minimax_score(NewBoard, Player, Score),
     write('Score for move '), write(Move), write(': '), write(Score), nl,
     better_move(Player, Move, Score, CurrentBestMove, CurrentBestScore, NextBestMove, NextBestScore),
