@@ -346,7 +346,7 @@ make_move2(computer, P, B, B2) :-
     % Set initial values for Alpha and Beta
     negative_infinity(Alpha), % or a suitably large negative number
     positive_infinity(Beta),   % or a suitably large positive number
-    Depth = 6,    % for example, to set the depth of search to 4 levels
+    Depth = 2,    % for example, to set the depth of search to 4 levels
 
     minimax_ab(B, M, Depth, Alpha, Beta, BestMove, BestScore),
 
@@ -809,6 +809,84 @@ near_winning_diagonal_up(Board, Player) :-
 % Utility 3
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+score_line('x', ['x','x','x','x'], 1000) :- !.
+score_line('x', ['x','x','x','e'], 100) :- !.
+score_line('x', ['x','x','e','x'], 100) :- !.
+score_line('x', ['x','e','x','x'], 100) :- !.
+score_line('x', ['e','x','x','x'], 100) :- !.
+score_line('x', ['x','x','e','e'], 10) :- !.
+score_line('x', ['x','e','x','e'], 10) :- !.
+score_line('x', ['x','e','e','x'], 10) :- !.
+score_line('x', ['e','x','x','e'], 10) :- !.
+score_line('x', ['e','x','e','x'], 10) :- !.
+score_line('x', ['e','e','x','x'], 10) :- !.
+score_line('x', ['x','e','e','e'], 1) :- !.
+score_line('x', ['e','x','e','e'], 1) :- !.
+score_line('x', ['e','e','x','e'], 1) :- !.
+score_line('x', ['e','e','e','x'], 1) :- !.
+
+score_line('o', ['o','o','o','o'], -1000) :- !.
+score_line('o', ['o','o','o','e'], -100) :- !.
+score_line('o', ['o','o','e','o'], -100) :- !.
+score_line('o', ['o','e','o','o'], -100) :- !.
+score_line('o', ['e','o','o','o'], -100) :- !.
+score_line('o', ['o','o','e','e'], -10) :- !.
+score_line('o', ['o','e','o','e'], -10) :- !.
+score_line('o', ['o','e','e','o'], -10) :- !.
+score_line('o', ['e','o','o','e'], -10) :- !.
+score_line('o', ['e','o','e','o'], -10) :- !.
+score_line('o', ['e','e','o','o'], -10) :- !.
+score_line('o', ['o','e','e','e'], -1) :- !.
+score_line('o', ['e','o','e','e'], -1) :- !.
+score_line('o', ['e','e','o','e'], -1) :- !.
+score_line('o', ['e','e','e','o'], -1) :- !.
+
+score_line(_, _, 0).
+
+% Utility predicates to get cell content based on row and column
+cell2(Board, Row, Col, Cell) :-
+    nth1(Row, Board, BoardRow),
+    nth1(Col, BoardRow, Cell).
+
+% Predicate to calculate the score for a diagonal going from top-left to bottom-right
+diagonal_score_down(Board, Player, Score) :-
+    findall(S, (
+        between(1, 3, StartRow),  % The start row for the diagonal can be from 1 to 3
+        between(1, 4, StartCol),  % The start column for the diagonal can be from 1 to 4
+        diagonal_cells(Board, StartRow, StartCol, 1, 1, Cells), % Collect the four cells in the diagonal
+        score_line(Player, Cells, S)  % Calculate the score for the line
+    ), Scores),
+    sum_list(Scores, Score).
+
+% Predicate to calculate the score for a diagonal going from bottom-left to top-right
+diagonal_score_up(Board, Player, Score) :-
+    findall(S, (
+        between(4, 6, StartRow),  % The start row for the diagonal can be from 4 to 6
+        between(1, 4, StartCol),  % The start column for the diagonal can be from 1 to 4
+        diagonal_cells(Board, StartRow, StartCol, -1, 1, Cells), % Collect the four cells in the diagonal
+        score_line(Player, Cells, S)  % Calculate the score for the line
+    ), Scores),
+    sum_list(Scores, Score).
+
+% Helper predicate to collect cells from a diagonal
+diagonal_cells(Board, Row, Col, RowInc, ColInc, [Cell1, Cell2, Cell3, Cell4]) :-
+    cell2(Board, Row, Col, Cell1),
+    NextRow1 is Row + RowInc, NextCol1 is Col + ColInc,
+    cell2(Board, NextRow1, NextCol1, Cell2),
+    NextRow2 is NextRow1 + RowInc, NextCol2 is NextCol1 + ColInc,
+    cell2(Board, NextRow2, NextCol2, Cell3),
+    NextRow3 is NextRow2 + RowInc, NextCol3 is NextCol2 + ColInc,
+    cell2(Board, NextRow3, NextCol3, Cell4).
+
+% Score calculation based on existing score_line predicates
+% It sums the scores for diagonals in both directions
+total_diagonal_score(Board, Player, TotalScore) :-
+    diagonal_score_down(Board, Player, ScoreDown),
+    diagonal_score_up(Board, Player, ScoreUp),
+    TotalScore is ScoreDown + ScoreUp.
+
+
+/*
 % Modify the score function to check potential lines for the player
 score_line(P, [P,P,P,P], 1000) :- !.
 score_line(P, [P,P,P,'e'], 100) :- !.
@@ -826,6 +904,7 @@ score_line(P, ['e',P,'e','e'], 1) :- !.
 score_line(P, ['e','e',P,'e'], 1) :- !.
 score_line(P, ['e','e','e',P], 1) :- !.
 score_line(_, _, 0).
+*/
 
 % Horizontal score
 horizontal_score(Board, Player, Score) :-
@@ -843,6 +922,7 @@ vertical_score(Board, Player, Score) :-
                 score_line(Player, Cells, S)), Scores),
     sum_list(Scores, Score).
 
+/*
 % Diagonal score
 diagonal_score(Board, Player, Score) :-
     findall(S, (between(1, 3, Row), between(1, 4, Col),
@@ -853,6 +933,7 @@ diagonal_score(Board, Player, Score) :-
                 score_line(Player, Cells, S)), DiagScores2),
     append(DiagScores1, DiagScores2, DiagScores),
     sum_list(DiagScores, Score).
+*/
 
 % Center score
 center_score(Board, Player, Score) :-
@@ -885,7 +966,8 @@ cell(Board, Row, Col, Player) :-
 utility3(Board, Player, Score) :-
     horizontal_score(Board, Player, HorizScore),
     vertical_score(Board, Player, VertScore),
-    diagonal_score(Board, Player, DiagScore),
+    % diagonal_score(Board, Player, DiagScore),
+    total_diagonal_score(Board, Player, DiagScore),
     center_score(Board, Player, CenterScore),
     maplist(number, [HorizScore, VertScore, DiagScore, CenterScore]),  % This ensures all are numbers
     Score is HorizScore + VertScore + DiagScore + CenterScore,
@@ -912,12 +994,16 @@ minimax(Board, Player, BestMove, BestScore) :-
     findall(Move, valid_move(Move, Board), MovesUnfiltered),
     list_to_set(MovesUnfiltered, Moves),  % Removes duplicates while preserving the order.
     wrdebug_printite('Possible moves: '), debug_print(Moves),
-    (
+    
+    /*(
         maximizing(Player) -> 
         negative_infinity(InitialScore),
         minimizing(Player) -> 
         positive_infinity(InitialScore)
-    ),
+    ),*/
+    InitialScore is 0,
+    number(InitialScore),
+
     best_move(Board, Moves, Player, null, InitialScore, BestMove, BestScore),
     debug_print('Best move chosen: '), debug_print(BestMove), debug_print(' with score: '), debug_print(BestScore).
 
