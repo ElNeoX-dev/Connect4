@@ -346,7 +346,7 @@ make_move2(computer, P, B, B2) :-
     % Set initial values for Alpha and Beta
     negative_infinity(Alpha), % or a suitably large negative number
     positive_infinity(Beta),   % or a suitably large positive number
-    Depth = 2,    % for example, to set the depth of search to 4 levels
+    Depth = 6,    % for example, to set the depth of search to 4 levels
 
     minimax_ab(B, M, Depth, Alpha, Beta, BestMove, BestScore),
 
@@ -724,7 +724,9 @@ utilityv2(Board, U) :-
 % Compute the difference in potential threats
 threats_difference(Board, U) :-
     count_potential_threats(Board, 'x', PThreats),
+    debug_print('On est rentré dans threats_difference.'),
     count_potential_threats(Board, 'o', OThreats),
+    debug_print('On est sorti de count_potential_threats.'),
     U is (PThreats - OThreats) * 10.
 
 % Check for near-winning positions
@@ -738,7 +740,7 @@ near_winning_position(Board, Player) :-
 near_winning_line(Board, Player) :-
     member(Line, Board),
     % three_and_one_empty(Player, Line).
-    sublist([Player, Player, Player], Row).
+    sublist([Player, Player, Player], Line).
 
 % Check for three of a kind and one empty slot
 three_and_one_empty(Player, Line) :-
@@ -760,8 +762,10 @@ count_potential_threats(Board, Player, Count) :-
 
 % Define potential threat using game predicates
 potential_threat(Board, Player, Move) :-
-    valid_move(Move, Board),
+    % valid_move(Move, Board),
     make_move3(Player, Move, Board, NewBoard),
+    debug_print("New Board"),
+    debug_output_board(NewBoard),
     near_winning_position(NewBoard, Player).
 
 near_winning_diagonal(Player, Board) :-
@@ -806,21 +810,21 @@ near_winning_diagonal_up(Board, Player) :-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Modify the score function to check potential lines for the player
-score_line(Player, [P,P,P,P], 100000) :- !.
-score_line(Player, [P,P,P,E], 100) :- !.
-score_line(Player, [P,P,E,P], 100) :- !.
-score_line(Player, [P,E,P,P], 100) :- !.
-score_line(Player, [E,P,P,P], 100) :- !.
-score_line(Player, [P,P,E,E], 10) :- !.
-score_line(Player, [P,E,P,E], 10) :- !.
-score_line(Player, [P,E,E,P], 10) :- !.
-score_line(Player, [E,P,P,E], 10) :- !.
-score_line(Player, [E,P,E,P], 10) :- !.
-score_line(Player, [E,E,P,P], 10) :- !.
-score_line(Player, [P,E,E,E], 1) :- !.
-score_line(Player, [E,P,E,E], 1) :- !.
-score_line(Player, [E,E,P,E], 1) :- !.
-score_line(Player, [E,E,E,P], 1) :- !.
+score_line(P, [P,P,P,P], 1000) :- !.
+score_line(P, [P,P,P,'e'], 100) :- !.
+score_line(P, [P,P,'e',P], 100) :- !.
+score_line(P, [P,'e',P,P], 100) :- !.
+score_line(P, ['e',P,P,P], 100) :- !.
+score_line(P, [P,P,'e','e'], 10) :- !.
+score_line(P, [P,'e',P,'e'], 10) :- !.
+score_line(P, [P,'e','e',P], 10) :- !.
+score_line(P, ['e',P,P,'e'], 10) :- !.
+score_line(P, ['e',P,'e',P], 10) :- !.
+score_line(P, ['e','e',P,P], 10) :- !.
+score_line(P, [P,'e','e','e'], 1) :- !.
+score_line(P, ['e',P,'e','e'], 1) :- !.
+score_line(P, ['e','e',P,'e'], 1) :- !.
+score_line(P, ['e','e','e',P], 1) :- !.
 score_line(_, _, 0).
 
 % Horizontal score
@@ -883,9 +887,16 @@ utility3(Board, Player, Score) :-
     vertical_score(Board, Player, VertScore),
     diagonal_score(Board, Player, DiagScore),
     center_score(Board, Player, CenterScore),
+    maplist(number, [HorizScore, VertScore, DiagScore, CenterScore]),  % This ensures all are numbers
     Score is HorizScore + VertScore + DiagScore + CenterScore,
     debug_print(Score),
     debug_output_board(Board).
+
+utility4(Board, PlayerX, PlayerO, NewScore) :-
+    utility3(Board, PlayerX, ScoreX),  
+    utility3(Board, PlayerO, ScoreO), 
+    NewScore is ScoreX - ScoreO.
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% AI
@@ -923,15 +934,6 @@ best_move(Board, [Move|Moves], Player, CurrentBestMove, CurrentBestScore, BestMo
     better_move(Player, Move, Score, CurrentBestMove, CurrentBestScore, NextBestMove, NextBestScore),
     best_move(Board, Moves, Player, NextBestMove, NextBestScore, BestMove, BestScore).
 
-% Calculate score for the given board and player
-minimax_score(Board, Player, Score) :-
-    debug_print('Calculating minimax score for player: '), debug_print(Player),
-    % utilityv2(Board, Score), 
-    enable_debug,
-    utility3(Board, Player, Score),
-    disable_debug,
-    debug_print('Calculated score: '), debug_print(Score).
-
 % Check if the given score is better than the current best score
 better_score(Player, Score1, Score2) :-
     (maximizing(Player) -> Score1 > Score2 ; minimizing(Player) -> Score1 < Score2).
@@ -945,6 +947,28 @@ better_move(Player, _, Score1, CurrentBestMove, CurrentBestScore, CurrentBestMov
     \+ better_score(Player, Score1, CurrentBestScore),
     debug_print('Current best move '), debug_print(CurrentBestMove), debug_print(' with score '), debug_print(CurrentBestScore), debug_print(' remains the best.').
 
+
+%.......................................
+% minimax_score
+%.......................................
+
+
+% Calculate score for the given board and player
+minimax_score(Board, Player, Score) :-
+    debug_print('Calculating minimax score for player: '), debug_print(Player),
+
+    %enable_debug,
+    %utilityv2(Board, Score), 
+    %disable_debug,
+
+    %enable_debug,
+    % utility3(Board, Player, Score),
+    utility4(Board, 'x', 'o', Score),
+    %disable_debug,
+
+    debug_print('Calculated score: '), debug_print(Score).
+
+
 %.......................................
 % alpha beta
 %.......................................
@@ -954,7 +978,7 @@ better_move(Player, _, Score1, CurrentBestMove, CurrentBestScore, CurrentBestMov
 minimax_ab(Board, Player, Depth, Alpha, Beta, BestMove, BestScore) :-
 
     debug_mode(Status),
-    write('Debug mode status: '), write(Status), nl,  % Diagnostic message
+    % write('Debug mode status: '), write(Status), nl,  % Diagnostic message
     
     (Depth = 0 ->
         debug_print('Leaf Node Reached - Depth: 0'),
@@ -966,9 +990,9 @@ minimax_ab(Board, Player, Depth, Alpha, Beta, BestMove, BestScore) :-
         debug_print('Checking moves at depth: '), debug_print(Depth), 
         findall(Move, valid_move(Move, Board), MovesUnfiltered),
         list_to_set(MovesUnfiltered, Moves),
-        enable_debug,
+        %enable_debug,
         debug_print(Moves),
-        disable_debug,
+        %disable_debug,
         debug_print('Possible Moves: '), debug_print(Moves), 
         (maximizing(Player) ->
             negative_infinity(InitialScore);
@@ -984,7 +1008,7 @@ minimax_ab(Board, Player, Depth, Alpha, Beta, BestMove, BestScore) :-
 best_move_ab(_, [], _, _, _, _, BestMove, BestScore, BestMove, BestScore) :-
     debug_print('No more moves to evaluate.').
 best_move_ab(Board, [Move|Moves], Player, Depth, Alpha, Beta, CurrentBestMove, CurrentBestScore, BestMove, BestScore) :-
-    enable_debug,
+    %enable_debug,
     debug_print('Evaluating Move: '), debug_print(Move),
     make_move3(Player, Move, Board, NewBoard),
     debug_print('Board after move: '),nl, debug_output_board(NewBoard), 
@@ -1008,8 +1032,8 @@ best_move_ab(Board, [Move|Moves], Player, Depth, Alpha, Beta, CurrentBestMove, C
             BestScore = Alpha,
             debug_print('Pruning with Alpha: '), debug_print(Alpha);
             update_best_move(Player, Move, OpponentBestScore, CurrentBestMove, CurrentBestScore, NextBestMove, NextBestScore),
-            best_move_ab(Board, Moves, Player, Depth, Alpha, NewBeta, NextBestMove, NextBestScore, BestMove, BestScore)),
-    disable_debug
+            best_move_ab(Board, Moves, Player, Depth, Alpha, NewBeta, NextBestMove, NextBestScore, BestMove, BestScore))
+    %disable_debug
     )
     .
     /*
