@@ -171,9 +171,9 @@ square(Board, Index, M) :-
 empty(e).
 
 win(Player, Board) :-
-    (horizontal_win(Player, Board),write("horizontal win"),nl);
-    (vertical_win(Player, Board),write("vertical win"),nl);
-    (diagonal_win(Player, Board),write("diagonal win"),nl).
+    horizontal_win(Player, Board);
+    vertical_win(Player, Board);
+    diagonal_win(Player, Board).
 
 horizontal_win(Player, Board) :-
     member(Row, Board),
@@ -188,7 +188,7 @@ diagonal_win(Player, Board) :-
     diagonal_down(Board, Player).
 
 diagonal_down(Board, Player) :-
-    between(1, 18, Index),
+    (between(1, 4, Index);between(8,11,Index);between(15,18,Index)),
     square(Board, Index, Player),
     square(Board,Index+8,Player),
     square(Board,Index+16,Player),
@@ -338,7 +338,7 @@ make_move2(computer, P, B, B2) :-
         write(' in column '),
         write(FinalMove),
         write('.'),
-        nl
+        nl,nl
     ;   % Handle the case where FinalMove is null (no moves left)
         write('No valid moves to execute.'), nl,
         goodbye
