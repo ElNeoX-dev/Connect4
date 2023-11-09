@@ -202,9 +202,9 @@ square(Board, Index, M) :-
 empty(e).
 
 win(Player, Board) :-
-    horizontal_win(Player, Board);
-    vertical_win(Player, Board);
-    diagonal_win(Player, Board).
+    (horizontal_win(Player, Board),write("horizontal win"),nl);
+    (vertical_win(Player, Board),write("vertical win"),nl);
+    (diagonal_win(Player, Board),write("diagonal win"),nl).
 
 horizontal_win(Player, Board) :-
     member(Row, Board),
@@ -341,7 +341,7 @@ make_move2(computer, P, B, B2) :-
     % Set initial values for Alpha and Beta
     negative_infinity(Alpha), % or a suitably large negative number
     positive_infinity(Beta),   % or a suitably large positive number
-    Depth = 4,    % for example, to set the depth of search to 4 levels
+    Depth = 5,    % for example, to set the depth of search to 4 levels
 
     minimax_ab(B, M, Depth, Alpha, Beta, BestMove, BestScore),
 
@@ -366,7 +366,7 @@ make_move2(computer, P, B, B2) :-
         nl,
         write('Computer places '),
         write(M),
-        write(' in square '),
+        write(' in column '),
         write(FinalMove),
         write('.'),
         nl
@@ -416,30 +416,6 @@ replace_empty(X, [H|T], [X|T]) :-
 replace_empty(X, [H|T], [H|R]) :-
     H \= 'e',
     replace_empty(X, T, R).
-
-
-%.......................................
-% utility
-%.......................................
-% determines the value of a given board position
-%
-
-utility(B,U) :-
-    win('x',B),
-    U = 1,
-    !
-    .
-
-utility(B,U) :-
-    win('o',B),
-    U = (-1),
-    !
-    .
-
-utility(B,U) :-
-    U = 0
-    .
-
 
 %.......................................
 % output_board
@@ -822,7 +798,7 @@ utility3(Board, Player, Score) :-
 utility4(Board, PlayerX, PlayerO, NewScore) :-
     utility3(Board, PlayerX, ScoreX),  
     utility3(Board, PlayerO, ScoreO), 
-    NewScore is ScoreX - ScoreO.
+    NewScore is ScoreX + ScoreO.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
