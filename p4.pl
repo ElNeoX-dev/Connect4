@@ -137,7 +137,7 @@ set_players(0) :-
 
 set_players(1) :-
     nl,
-    write('Is human playing X or O (X moves first)? '),
+    write('Is human playing x or o (x moves first)? '),
     read(M),
     human_playing(M), !
     .
@@ -155,20 +155,20 @@ set_players(N) :-
 
 
 human_playing(M) :-
-    (M == 'x' ; M == 'X'),
+    (M == 'x'),
     asserta( player(1, human) ),
     asserta( player(2, computer) ), !
     .
 
 human_playing(M) :-
-    (M == 'o' ; M == 'O'),
+    (M == 'o'),
     asserta( player(1, computer) ),
     asserta( player(2, human) ), !
     .
 
 human_playing(M) :-
     nl,
-    write('Please enter X or O.'),
+    write('Please enter x or o.'),
     set_players(1)
     .
 
@@ -198,7 +198,6 @@ square(Board, Index, M) :-
 % win
 %.......................................
 % Players win by having their mark in one of the following square configurations:
-%
 
 empty(e).
 
@@ -252,7 +251,6 @@ lists_firsts_rests([[F|Os]|Rest], [F|Fs], [Os|Oss]) :-
 %.......................................
 % applies a move on the given board
 % (put mark M in square S on board B and return the resulting board B2)
-%
 
 column_pos(Col, S) :-
     board(B),
@@ -301,15 +299,12 @@ game_over2(P, B) :-
 
 % Make a move in the game, replacing the first empty cell from the bottom.
 make_move3(Player, S, Board, NewBoard) :-
-    valid_move(S, Board),
     play_move(Player, S, Board, NewBoard).
 
 
 make_move(P, B) :-
     player(P, Type),
-
     make_move2(Type, P, B, B2),
-
     retract(board(_)),
     asserta(board(B2))
     .
@@ -326,10 +321,10 @@ make_move2(human, P, B, B2) :-
     square(B, S, E),
     player_mark(P, M),
 
-    (S >= 1, S =< 7 ->  % Check if Column is within the valid range.
+    (S >= 1, S =< 7,valid_move(S,B) ->  % Check if move is valid
         make_move3(M, S, B, B2), !
     ;
-        write('Invalid column. Please enter a number between 1 and 7.'), nl,
+        write('Move is invalid. Please enter a number between 1 and 7 in a non-empty column.'), nl,
         fail
     ).
     
@@ -346,7 +341,7 @@ make_move2(computer, P, B, B2) :-
     % Set initial values for Alpha and Beta
     negative_infinity(Alpha), % or a suitably large negative number
     positive_infinity(Beta),   % or a suitably large positive number
-    Depth = 2,    % for example, to set the depth of search to 4 levels
+    Depth = 4,    % for example, to set the depth of search to 4 levels
 
     minimax_ab(B, M, Depth, Alpha, Beta, BestMove, BestScore),
 
@@ -381,20 +376,6 @@ make_move2(computer, P, B, B2) :-
     ).
 
 
-    /*
-    make_move3(M, S, B, B2),
-
-    nl,
-    nl,
-    write('Computer places '),
-    write(M),
-    write(' in square '),
-    write(S),
-    write('.'),
-    nl.
-    */
-
-
 
 
 %.......................................
@@ -408,14 +389,14 @@ make_move2(computer, P, B, B2) :-
 % And checks if there is an empty cell in it.
 valid_move(S, Board) :-
     transpose(Board,TransposedBoard),
-    nth1(S, TransposedBoard, ColumnList),
-    member('e', ColumnList).
+    nth1(S, TransposedBoard, Column),
+    member('e', Column).
 
 % Play a move and update the game board.
 play_move(Player, S, Board, NewBoard) :-
     transpose(Board, TransposedBoard),
-    nth1(S, TransposedBoard, ColumnList),
-    reverse(ColumnList, ReversedColumn),  % Reverse to work from the bottom
+    nth1(S, TransposedBoard, Column),
+    reverse(Column, ReversedColumn),  % Reverse to work from the bottom
     replace_empty(Player, ReversedColumn, ReversedNewColumn),
     reverse(ReversedNewColumn, NewColumn),
     replace_in_list(S, NewColumn, TransposedBoard, UpdatedTransposedBoard),
@@ -702,108 +683,6 @@ get_item2( [_|T], N, A, V) :-
     A1 is A + 1,
     get_item2( T, N, A1, V)
     .
-    
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% UTILITY 2
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-% Simplified utility evaluation
-utilityv2(Board, U) :-
-    (   win('x', Board) -> positive_infinity(U)
-    ,   debug_print('Player X wins!')
-    ;   win('o', Board) -> negative_infinity(U)
-    ,   debug_print('Player O wins!')
-    ;   near_winning_position(Board, 'x') -> U = 5000
-    ,   debug_print('Player X almost wins!')
-    ;   near_winning_position(Board, 'o') -> U = -5000
-    ,   debug_print('Player O almost wins!')
-    ;   threats_difference(Board, U)
-    ,   debug_print('Threats difference: '), debug_print(U)
-    ).
-
-% Compute the difference in potential threats
-threats_difference(Board, U) :-
-    count_potential_threats(Board, 'x', PThreats),
-    debug_print('On est rentré dans threats_difference.'),
-    count_potential_threats(Board, 'o', OThreats),
-    debug_print('On est sorti de count_potential_threats.'),
-    U is (PThreats - OThreats) * 10.
-
-% Check for near-winning positions
-near_winning_position(Board, Player) :-
-    (   near_winning_line(Board, Player)
-    ;   near_winning_line(transpose(Board), Player)  % Check vertical by transposing
-    ;   near_winning_diagonal(Board, Player)
-    ).
-
-% Check for near-winning lines (horizontal/vertical)
-near_winning_line(Board, Player) :-
-    member(Line, Board),
-    % three_and_one_empty(Player, Line).
-    sublist([Player, Player, Player], Line).
-
-% Check for three of a kind and one empty slot
-three_and_one_empty(Player, Line) :-
-    append(_, [A, B, C, D | _], Line),
-    select(empty, [A, B, C, D], Three),
-    all_same(Player, Three).
-
-% Confirm all elements in a list match Player
-all_same(Player, [H | T]) :-
-    H = Player,
-    all_same(Player, T).
-all_same(_, []).
-
-% Count potential threats
-count_potential_threats(Board, Player, Count) :-
-    findall(Move, potential_threat(Board, Player, Move), Threats),
-    length(Threats, Count),
-    format("~w has ~w potential threats : ~w\n", [Player, Count, Threats]).
-
-% Define potential threat using game predicates
-potential_threat(Board, Player, Move) :-
-    % valid_move(Move, Board),
-    make_move3(Player, Move, Board, NewBoard),
-    debug_print("New Board"),
-    debug_output_board(NewBoard),
-    near_winning_position(NewBoard, Player).
-
-near_winning_diagonal(Player, Board) :-
-    near_winning_diagonal_down(Board, Player);
-    near_winning_diagonal_up(Board, Player).
-
-near_winning_diagonal_down(Board, Player) :-
-    between(1, 18, Index),
-    (
-        (
-            square(Board, Index, Player),
-            square(Board,Index+8,Player),
-            square(Board,Index+16,Player),
-            square(Board,Index+24,'e')
-        );
-        (
-            square(Board, Index, Player),
-            square(Board,Index+8,Player),
-            square(Board,Index+16,'e'),
-            square(Board,Index+24,Player)
-        );
-        (
-            square(Board, Index, Player),
-            square(Board,Index+8,'e'),
-            square(Board,Index+16,Player),
-            square(Board,Index+24,Player)
-        );
-        (
-            square(Board, Index, 'e'),
-            square(Board,Index+8,Player),
-            square(Board,Index+16,Player),
-            square(Board,Index+24,Player)
-        )
-    ).
-
-near_winning_diagonal_up(Board, Player) :-
-    reverse(Board, Reversed),
-    near_winning_diagonal_down(Reversed, Player).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Utility 3
@@ -885,27 +764,6 @@ total_diagonal_score(Board, Player, TotalScore) :-
     diagonal_score_up(Board, Player, ScoreUp),
     TotalScore is ScoreDown + ScoreUp.
 
-
-/*
-% Modify the score function to check potential lines for the player
-score_line(P, [P,P,P,P], 1000) :- !.
-score_line(P, [P,P,P,'e'], 100) :- !.
-score_line(P, [P,P,'e',P], 100) :- !.
-score_line(P, [P,'e',P,P], 100) :- !.
-score_line(P, ['e',P,P,P], 100) :- !.
-score_line(P, [P,P,'e','e'], 10) :- !.
-score_line(P, [P,'e',P,'e'], 10) :- !.
-score_line(P, [P,'e','e',P], 10) :- !.
-score_line(P, ['e',P,P,'e'], 10) :- !.
-score_line(P, ['e',P,'e',P], 10) :- !.
-score_line(P, ['e','e',P,P], 10) :- !.
-score_line(P, [P,'e','e','e'], 1) :- !.
-score_line(P, ['e',P,'e','e'], 1) :- !.
-score_line(P, ['e','e',P,'e'], 1) :- !.
-score_line(P, ['e','e','e',P], 1) :- !.
-score_line(_, _, 0).
-*/
-
 % Horizontal score
 horizontal_score(Board, Player, Score) :-
     findall(S, (between(1, 6, Row), between(1, 4, Col),
@@ -921,19 +779,6 @@ vertical_score(Board, Player, Score) :-
                 consecutive_vertical_cells(Board, Row, Col, EndRow, Cells),
                 score_line(Player, Cells, S)), Scores),
     sum_list(Scores, Score).
-
-/*
-% Diagonal score
-diagonal_score(Board, Player, Score) :-
-    findall(S, (between(1, 3, Row), between(1, 4, Col),
-                consecutive_diagonal_cells_down_right(Board, Row, Col, Cells),
-                score_line(Player, Cells, S)), DiagScores1),
-    findall(S, (between(1, 3, Row), between(4, 7, Col),
-                consecutive_diagonal_cells_up_right(Board, Row, Col, Cells),
-                score_line(Player, Cells, S)), DiagScores2),
-    append(DiagScores1, DiagScores2, DiagScores),
-    sum_list(DiagScores, Score).
-*/
 
 % Center score
 center_score(Board, Player, Score) :-
@@ -995,12 +840,6 @@ minimax(Board, Player, BestMove, BestScore) :-
     list_to_set(MovesUnfiltered, Moves),  % Removes duplicates while preserving the order.
     wrdebug_printite('Possible moves: '), debug_print(Moves),
     
-    /*(
-        maximizing(Player) -> 
-        negative_infinity(InitialScore),
-        minimizing(Player) -> 
-        positive_infinity(InitialScore)
-    ),*/
     InitialScore is 0,
     number(InitialScore),
 
@@ -1122,28 +961,6 @@ best_move_ab(Board, [Move|Moves], Player, Depth, Alpha, Beta, CurrentBestMove, C
     %disable_debug
     )
     .
-    /*
-    ;
-    (minimizing(Player) ->
-        NewBeta is min(Beta, OpponentBestScore),
-        debug_print('New Beta: '), debug_print(NewBeta), 
-        (Alpha >= NewBeta ->
-            BestMove = Move,
-            BestScore = Alpha,
-            debug_print('Pruning with Alpha: '), debug_print(Alpha);
-            update_best_move(Player, Move, OpponentBestScore, CurrentBestMove, CurrentBestScore, NextBestMove, NextBestScore),
-            best_move_ab(Board, Moves, Player, Depth, Alpha, NewBeta, NextBestMove, NextBestScore, BestMove, BestScore));
-        NewAlpha is max(Alpha, OpponentBestScore),
-        debug_print('New Alpha: '), debug_print(NewAlpha),
-        (NewAlpha >= Beta ->
-            BestMove = Move,
-            BestScore = Beta,
-            debug_print('Pruning with Beta: '), debug_print(Beta);
-            update_best_move(Player, Move, OpponentBestScore, CurrentBestMove, CurrentBestScore, NextBestMove, NextBestScore),
-            best_move_ab(Board, Moves, Player, Depth, NewAlpha, Beta, NextBestMove, NextBestScore, BestMove, BestScore))
-    )   
-    .
-    */
 
 update_best_move(Player, Move, Score, CurrentBestMove, CurrentBestScore, NextBestMove, NextBestScore) :-
     debug_print('Evaluating if current move is better...'), 
@@ -1155,117 +972,6 @@ update_best_move(Player, Move, Score, CurrentBestMove, CurrentBestScore, NextBes
     debug_print('New Best Score: '), debug_print(NextBestScore).
 update_best_move(_, _, _, CurrentBestMove, CurrentBestScore, CurrentBestMove, CurrentBestScore) :-
     debug_print('Keeping current best move and score.').
-
-
-/*
-% Minimax algorithm with alpha-beta pruning and limited depth
-minimax_ab(Board, Player, Depth, Alpha, Beta, BestMove, BestScore) :-
-    (Depth = 0 -> 
-        minimax_score(Board, Player, BestScore),  % We use your minimax_score for leaf nodes
-        BestMove = null;  % No move because we re at leaf node
-        findall(Move, valid_move(Move, Board), MovesUnfiltered),
-        list_to_set(MovesUnfiltered, Moves),  % Removes duplicates while preserving order
-        (maximizing(Player) ->
-            InitialScore = -1.0;
-            InitialScore = 1.0),
-        best_move_ab(Board, Moves, Player, Depth, Alpha, Beta, null, InitialScore, BestMove, BestScore)
-    ).
-
-best_move_ab(_, [], _, _, _, _, BestMove, BestScore, BestMove, BestScore).
-best_move_ab(Board, [Move|Moves], Player, Depth, Alpha, Beta, CurrentBestMove, CurrentBestScore, BestMove, BestScore) :-
-    make_move3(Player, Move, Board, NewBoard),
-    NewDepth is Depth - 1,
-    inverse_mark(Player, OtherPlayer),  
-    minimax_ab(NewBoard, OtherPlayer, NewDepth, Alpha, Beta, _, OpponentBestScore),
-    (maximizing(Player) ->
-        NewAlpha is max(Alpha, OpponentBestScore),
-        (NewAlpha >= Beta ->
-            BestMove = Move,  % Pruning happens
-            BestScore = Beta;  % We can t do better than Beta in this branch
-            update_best_move(Player, Move, OpponentBestScore, CurrentBestMove, CurrentBestScore, NextBestMove, NextBestScore),
-            best_move_ab(Board, Moves, Player, Depth, NewAlpha, Beta, NextBestMove, NextBestScore, BestMove, BestScore));
-        NewBeta is min(Beta, OpponentBestScore),
-        (Alpha >= NewBeta ->
-            BestMove = Move,  % Pruning happens
-            BestScore = Alpha;  % We can t do better than Alpha in this branch
-            update_best_move(Player, Move, OpponentBestScore, CurrentBestMove, CurrentBestScore, NextBestMove, NextBestScore),
-            best_move_ab(Board, Moves, Player, Depth, Alpha, NewBeta, NextBestMove, NextBestScore, BestMove, BestScore))
-    ).
-
-% Update the best move and score if the current move is better; otherwise, keep the current best.
-update_best_move(Player, Move, Score, CurrentBestMove, CurrentBestScore, NextBestMove, NextBestScore) :-
-    % Check if the current move is better than the best one so far.
-    better_score(Player, Score, CurrentBestScore), 
-    !, % Cut to prevent backtracking once we found a better move.
-    NextBestMove = Move,
-    NextBestScore = Score.
-update_best_move(_, _, _, CurrentBestMove, CurrentBestScore, CurrentBestMove, CurrentBestScore).
-*/
-
-/*
-minimax(Board, Player, BestMove, BestScore) :-
-    write('minimax called for player '), write(Player), nl,
-    findall(Move, valid_move(Move, Board), Moves),
-    write('Valid moves found: '), write(Moves), nl,
-    best_move(Board, Moves, Player, BestMove, BestScore),
-    write('Best move: '), write(BestMove), write(' with score '), write(BestScore), nl.
-
-best_move(Board, [Move|Moves], Player, BestMove, BestScore) :-
-    write('Evaluating move: '), write(Move), nl,
-    move(Board, Move, Player, NewBoard),     % make_move3(Player, Move, Board, NewBoard),
-    write('After move: '), write(Move), nl,
-    write('Before Opponent Player: '), write(Player), nl,
-    inverse_mark(Player, Opponent),
-    
-    write('Before minimax_score: '), write(Opponent), nl,
-    minimax_score(NewBoard, Opponent, Score),
-    write('Score for move '), write(Move), write(': '), write(Score), nl,
-    
-    best_move(Board, Moves, Player, OtherMove, OtherScore),
-    better_move(Player, Move, Score, OtherMove, OtherScore, BestMove, BestScore).
-
-best_move(_, [], _, null, -inf) :-
-    write('No more moves left, returning -infinity'), nl.
-
-minimax_score(Board, Player, Score) :-
-    game_over(Player, Board), % Assuming game_over also returns a reason
-    write('Game over '), nl,
-    utility2(Board, Score),
-    write('Utility score for board: '), write(Score), nl,
-    !.
-
-minimax_score(Board, Player, Score) :-
-    inverse_mark(Player, Opponent),
-    findall(OppMove, valid_move(OppMove, Board), OppMoves),
-    write('Opponent moves found: '), write(OppMoves), nl,
-    best_opp_move(Board, OppMoves, Opponent, _, OppScore),
-    Score is -OppScore,
-    write('Opponent score: '), write(OppScore), write(', Score: '), write(Score), nl.
-
-best_opp_move(Board, [Move|Moves], Opponent, BestMove, BestScore) :-
-    write('Evaluating opponent move: '), write(Move), nl,
-    move(Board, Move, Opponent, NewBoard),    % make_move3(Opponent, Move, Board, NewBoard),
-    minimax_score(NewBoard, Opponent, Score),
-    best_opp_move(Board, Moves, Opponent, OtherMove, OtherScore),
-    better_move(Opponent, Move, Score, OtherMove, OtherScore, BestMove, BestScore).
-
-best_opp_move(_, [], _, null, inf) :-
-    write('No more opponent moves left, returning infinity'), nl.
-
-better_move(Player, Move1, Score1, Move2, Score2, Move1, Score1) :-
-    write('Comparing scores: '), write(Score1), write(' vs '), write(Score2), nl,
-    better_score(Player, Score1, Score2),
-    write(Move1), write(' is a better move than '), write(Move2), nl,
-    !.
-
-better_move(_, _, _, Move2, Score2, Move2, Score2) :-
-    write('Defaulting to move '), write(Move2), nl.
-
-better_score(Player, Score1, Score2) :-
-    write('Checking if player '), write(Player), write(' should maximize or minimize'), nl,
-    (maximizing(Player) -> Score1 > Score2 ; Score1 < Score2),
-    write('Better score for player '), write(Player), write(' is '), write(Score1), nl.
-*/
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
