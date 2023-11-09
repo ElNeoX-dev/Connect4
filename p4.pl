@@ -37,7 +37,6 @@ run :-
 
 hello :-
     initialize,
-%   cls,
     nl,
     nl,
     nl,
@@ -47,7 +46,6 @@ hello :-
     .
 
 initialize :-
-    random_seed,          %%% use current time to initialize random number generator
     blank_mark(E),
     asserta(board([[E,E,E,E,E,E,E],
                     [E,E,E,E,E,E,E],
@@ -245,7 +243,7 @@ move(B,Col,M,B2) :-
 % game_over
 %.......................................
 % determines when the game is over
-%
+
 game_over(P, B) :-
     game_over2(P, B)
     .
@@ -264,7 +262,6 @@ game_over2(P, B) :-
 %.......................................
 % requests next move from human/computer,
 % then applies that move to the given board
-%
 
 % Make a move in the game, replacing the first empty cell from the bottom.
 make_move3(Player, S, Board, NewBoard) :-
@@ -370,8 +367,6 @@ play_move(Player, S, Board, NewBoard) :-
     reverse(ReversedNewColumn, NewColumn),
     replace_in_list(S, NewColumn, TransposedBoard, UpdatedTransposedBoard),
     transpose(UpdatedTransposedBoard, NewBoard)
-    % write(NewBoard), nl,
-    % write('Done'), nl
     .
 
 % Replace an item in a list with a new item based on the index.
@@ -484,87 +479,6 @@ write_blue(Text) :-
     format('~c[34m~w~c[0m', [27, Text, 27]).
 
 
-
-% ?- B = [[x,o,x,o,x,o,x], [x,o,x,o,x,o,x], [x,o,x,o,x,o,x], [x,o,x,o,x,o,x], [x,o,x,o,x,o,x], [x,o,x,o,x,o,x], [x,o,x,o,x,o,x]], output_board(B).
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% PSEUDO-RANDOM NUMBERS
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%.......................................
-% random_seed
-%.......................................
-% Initialize the random number generator...
-% If no seed is provided, use the current time
-%
-
-random_seed :-
-    random_seed(_),
-    !
-    .
-
-random_seed(N) :-
-    nonvar(N),
-% Do nothing, SWI-Prolog does not support seeding the random number generator
-    !
-    .
-
-random_seed(N) :-
-    var(N),
-% Do nothing, SWI-Prolog does not support seeding the random number generator
-    !
-    .
-
-/*****************************************
- OTHER COMPILER SUPPORT
-******************************************
-
-arity_prolog___random_seed(N) :-
-    nonvar(N),
-    randomize(N),
-    !
-    .
-
-arity_prolog___random_seed(N) :-
-    var(N),
-    time(time(Hour,Minute,Second,Tick)),
-    N is ( (Hour+1) * (Minute+1) * (Second+1) * (Tick+1)),
-    randomize(N),
-    !
-    .
-
-******************************************/
-
-
-
-%.......................................
-% random_int_1n
-%.......................................
-% returns a random integer from 1 to N
-%
-random_int_1n(N, V) :-
-    V is random(N) + 1,
-    !
-    .
-
-/*****************************************
- OTHER COMPILER SUPPORT
-******************************************
-
-arity_prolog___random_int_1n(N, V) :-
-    R is random,
-    V2 is (R * N) - 0.5,
-    float_text(V2,V3,fixed(0)),
-    int_text(V4,V3),
-    V is V4 + 1,
-    !
-    .
-
-******************************************/
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% LIST PROCESSING
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -601,32 +515,6 @@ set_item2( [_|T1], N, V, A, [V|T2] ) :-
 set_item2( [H|T1], N, V, A, [H|T2] ) :-
     A1 is A + 1,
     set_item2( T1, N, V, A1, T2 )
-    .
-
-
-%.......................................
-% get_item
-%.......................................
-% Given a list L, retrieve the item at position N and return it as value V
-%
-
-get_item(L, N, V) :-
-    get_item2(L, N, 1, V)
-    .
-
-get_item2( [], _N, _A, V) :-
-    V = [], !,
-    fail
-        .
-
-get_item2( [H|_T], N, A, V) :-
-    A = N,
-    V = H
-    .
-
-get_item2( [_|T], N, A, V) :-
-    A1 is A + 1,
-    get_item2( T, N, A1, V)
     .
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -756,7 +644,6 @@ cell(Board, Row, Col, Player) :-
 utility3(Board, Player, Score) :-
     horizontal_score(Board, Player, HorizScore),
     vertical_score(Board, Player, VertScore),
-    % diagonal_score(Board, Player, DiagScore),
     total_diagonal_score(Board, Player, DiagScore),
     center_score(Board, Player, CenterScore),
     maplist(number, [HorizScore, VertScore, DiagScore, CenterScore]),  % This ensures all are numbers
@@ -764,7 +651,8 @@ utility3(Board, Player, Score) :-
 
 utility4(Board, PlayerX, PlayerO, NewScore) :-
     utility3(Board, PlayerX, ScoreX),  
-    utility3(Board, PlayerO, ScoreO), 
+    utility3(Board, PlayerO, ScoreO),
+    % Addition because the utility for X is positive and the utility for O is negative 
     NewScore is ScoreX + ScoreO.
 
 
