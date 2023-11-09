@@ -303,8 +303,8 @@ make_move3(Player, S, Board, NewBoard) :-
 
 
 make_move(P, B) :-
-    player(P, Type),
-    make_move2(Type, P, B, B2),
+    player(P, Type), !,
+    make_move2(Type, P, B, B2), !,
     retract(board(_)),
     asserta(board(B2))
     .
@@ -325,7 +325,7 @@ make_move2(human, P, B, B2) :-
         make_move3(M, S, B, B2), !
     ;
         write('Move is invalid. Please enter a number between 1 and 7 in a non-empty column.'), nl,
-        fail
+        make_move2(human, P, B, B2)
     ).
     
 
