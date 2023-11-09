@@ -1,35 +1,4 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%   DEBUGGING   %%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-:- dynamic debug_mode/1.
-debug_mode(off).  % By default, debug is off
-
-% Enable debug
-enable_debug :-
-    retractall(debug_mode(_)),
-    assert(debug_mode(on)).
-
-% Disable debug
-disable_debug :-
-    retractall(debug_mode(_)),
-    assert(debug_mode(off)).
-
-% Debug message handling
-debug_print(Message) :-
-    debug_mode(on),
-    !,  % Cut to prevent further backtracking
-    write(Message), nl.
-debug_print(_).
-
-% Debug board plotting
-debug_output_board(Board) :-
-    debug_mode(on),
-    !,  % Cut to prevent further backtracking
-    output_board(Board).
-debug_output_board(_).
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%     FACTS     %%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -791,9 +760,7 @@ utility3(Board, Player, Score) :-
     total_diagonal_score(Board, Player, DiagScore),
     center_score(Board, Player, CenterScore),
     maplist(number, [HorizScore, VertScore, DiagScore, CenterScore]),  % This ensures all are numbers
-    Score is HorizScore + VertScore + DiagScore + CenterScore,
-    debug_print(Score),
-    debug_output_board(Board).
+    Score is HorizScore + VertScore + DiagScore + CenterScore.
 
 utility4(Board, PlayerX, PlayerO, NewScore) :-
     utility3(Board, PlayerX, ScoreX),  
@@ -809,29 +776,22 @@ utility4(Board, PlayerX, PlayerO, NewScore) :-
 % minimax
 %.......................................
 
-% Minimax algorithm with debugging
+% Minimax algorithm
 minimax(Board, Player, BestMove, BestScore) :-
-    debug_print('Minimax called for player: '), debug_print(Player),
     findall(Move, valid_move(Move, Board), MovesUnfiltered),
     list_to_set(MovesUnfiltered, Moves),  % Removes duplicates while preserving the order.
-    wrdebug_printite('Possible moves: '), debug_print(Moves),
     
     InitialScore is 0,
     number(InitialScore),
 
-    best_move(Board, Moves, Player, null, InitialScore, BestMove, BestScore),
-    debug_print('Best move chosen: '), debug_print(BestMove), debug_print(' with score: '), debug_print(BestScore).
+    best_move(Board, Moves, Player, null, InitialScore, BestMove, BestScore).
 
-best_move(_, [], _, BestMove, BestScore, BestMove, BestScore) :-
-    debug_print('No moves left. Best move so far: '), debug_print(BestMove), debug_print(' with score: '), debug_print(BestScore), nl.
+best_move(_, [], _, BestMove, BestScore, BestMove, BestScore) .
+
 best_move(Board, [Move|Moves], Player, CurrentBestMove, CurrentBestScore, BestMove, BestScore) :-
-    debug_print('Evaluating move: '), debug_print(Move),
     % move(Board, Move, Player, NewBoard),
     make_move3(Player, Move, Board, NewBoard),
-    debug_print('After move: '), debug_print(Move),
-    debug_print('Before score: '), debug_print(Player), 
     minimax_score(NewBoard, Player, Score),
-    debug_print('Score for move '), debug_print(Move), debug_print(': '), debug_print(Score),
     better_move(Player, Move, Score, CurrentBestMove, CurrentBestScore, NextBestMove, NextBestScore),
     best_move(Board, Moves, Player, NextBestMove, NextBestScore, BestMove, BestScore).
 
@@ -841,12 +801,10 @@ better_score(Player, Score1, Score2) :-
 
 % Determine if the current move is better than the best one so far
 better_move(Player, Move1, Score1, CurrentBestMove, CurrentBestScore, Move1, Score1) :-
-    debug_print('Comparing '), debug_print(Score1), debug_print(' with '), debug_print(CurrentBestScore), 
-    better_score(Player, Score1, CurrentBestScore),
-    debug_print('Move '), debug_print(Move1), debug_print(' with score '), debug_print(Score1), debug_print(' is better than current best.').
+    better_score(Player, Score1, CurrentBestScore).
+
 better_move(Player, _, Score1, CurrentBestMove, CurrentBestScore, CurrentBestMove, CurrentBestScore) :-
-    \+ better_score(Player, Score1, CurrentBestScore),
-    debug_print('Current best move '), debug_print(CurrentBestMove), debug_print(' with score '), debug_print(CurrentBestScore), debug_print(' remains the best.').
+    \+ better_score(Player, Score1, CurrentBestScore).
 
 
 %.......................................
@@ -856,18 +814,7 @@ better_move(Player, _, Score1, CurrentBestMove, CurrentBestScore, CurrentBestMov
 
 % Calculate score for the given board and player
 minimax_score(Board, Player, Score) :-
-    debug_print('Calculating minimax score for player: '), debug_print(Player),
-
-    %enable_debug,
-    %utilityv2(Board, Score), 
-    %disable_debug,
-
-    %enable_debug,
-    % utility3(Board, Player, Score),
-    utility4(Board, 'x', 'o', Score),
-    %disable_debug,
-
-    debug_print('Calculated score: '), debug_print(Score).
+    utility4(Board, 'x', 'o', Score).
 
 
 %.......................................
@@ -877,77 +824,49 @@ minimax_score(Board, Player, Score) :-
 
 % Minimax algorithm with alpha-beta pruning and limited depth
 minimax_ab(Board, Player, Depth, Alpha, Beta, BestMove, BestScore) :-
-
-    debug_mode(Status),
-    % write('Debug mode status: '), write(Status), nl,  % Diagnostic message
     
     (Depth = 0 ->
-        debug_print('Leaf Node Reached - Depth: 0'),
         minimax_score(Board, Player, BestScore),
-        debug_print('Score at Leaf: '), debug_print(BestScore),
-        BestMove = null,  % No move because we re at leaf node
-        debug_print('BestMove at Leaf: '), debug_print(BestMove)
+        BestMove = null  % No move because we re at leaf node
     ;
-        debug_print('Checking moves at depth: '), debug_print(Depth), 
         findall(Move, valid_move(Move, Board), MovesUnfiltered),
         list_to_set(MovesUnfiltered, Moves),
-        %enable_debug,
-        debug_print(Moves),
-        %disable_debug,
-        debug_print('Possible Moves: '), debug_print(Moves), 
         (maximizing(Player) ->
             negative_infinity(InitialScore);
             positive_infinity(InitialScore)
         ),
-        debug_print('Initial Score: '), debug_print(InitialScore), 
-        best_move_ab(Board, Moves, Player, Depth, Alpha, Beta, null, InitialScore, BestMove, BestScore),
-        debug_print('Best Move after evaluating all possibilities: '), debug_print(BestMove),
-        debug_print('Best Score after evaluating all possibilities: '), debug_print(BestScore),
-        disable_debug
+        best_move_ab(Board, Moves, Player, Depth, Alpha, Beta, null, InitialScore, BestMove, BestScore)
     ).
 
-best_move_ab(_, [], _, _, _, _, BestMove, BestScore, BestMove, BestScore) :-
-    debug_print('No more moves to evaluate.').
+best_move_ab(_, [], _, _, _, _, BestMove, BestScore, BestMove, BestScore).
+
 best_move_ab(Board, [Move|Moves], Player, Depth, Alpha, Beta, CurrentBestMove, CurrentBestScore, BestMove, BestScore) :-
-    %enable_debug,
-    debug_print('Evaluating Move: '), debug_print(Move),
     make_move3(Player, Move, Board, NewBoard),
-    debug_print('Board after move: '),nl, debug_output_board(NewBoard), 
     NewDepth is Depth - 1,
     inverse_mark(Player, OtherPlayer),
     minimax_ab(NewBoard, OtherPlayer, NewDepth, Alpha, Beta, _, OpponentBestScore),
-    debug_print('Opponent Score: '), debug_print(OpponentBestScore), nl,
     (maximizing(Player) ->
         NewAlpha is max(Alpha, OpponentBestScore),
-        debug_print('New Alpha: '), debug_print(NewAlpha),
         (NewAlpha >= Beta ->
             BestMove = Move,
-            BestScore = Beta,
-            debug_print('Pruning with Beta: '), debug_print(Beta);
+            BestScore = Beta;
             update_best_move(Player, Move, OpponentBestScore, CurrentBestMove, CurrentBestScore, NextBestMove, NextBestScore),
             best_move_ab(Board, Moves, Player, Depth, NewAlpha, Beta, NextBestMove, NextBestScore, BestMove, BestScore));
         NewBeta is min(Beta, OpponentBestScore),
-        debug_print('New Beta: '), debug_print(NewBeta), 
         (Alpha >= NewBeta ->
             BestMove = Move,
-            BestScore = Alpha,
-            debug_print('Pruning with Alpha: '), debug_print(Alpha);
+            BestScore = Alpha;
             update_best_move(Player, Move, OpponentBestScore, CurrentBestMove, CurrentBestScore, NextBestMove, NextBestScore),
             best_move_ab(Board, Moves, Player, Depth, Alpha, NewBeta, NextBestMove, NextBestScore, BestMove, BestScore))
-    %disable_debug
     )
     .
 
 update_best_move(Player, Move, Score, CurrentBestMove, CurrentBestScore, NextBestMove, NextBestScore) :-
-    debug_print('Evaluating if current move is better...'), 
     better_score(Player, Score, CurrentBestScore),
     !,
     NextBestMove = Move,
-    NextBestScore = Score,
-    debug_print('New Best Move: '), debug_print(NextBestMove),
-    debug_print('New Best Score: '), debug_print(NextBestScore).
-update_best_move(_, _, _, CurrentBestMove, CurrentBestScore, CurrentBestMove, CurrentBestScore) :-
-    debug_print('Keeping current best move and score.').
+    NextBestScore = Score.
+update_best_move(_, _, _, CurrentBestMove, CurrentBestScore, CurrentBestMove, CurrentBestScore).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
