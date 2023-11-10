@@ -113,7 +113,7 @@ set_players(2) :-
     asserta( player(2, human) ), !
     .
 
-set_players(N) :-
+set_players(_) :-
     nl,
     write('Please enter 0, 1, or 2.'),
     read_players
@@ -132,7 +132,7 @@ human_playing(M) :-
     asserta( player(2, human) ), !
     .
 
-human_playing(M) :-
+human_playing(_) :-
     nl,
     write('Please enter x or o.'),
     set_players(1)
@@ -252,7 +252,7 @@ game_over2(P, B) :-
     win(M,B)
     .
 
-game_over2(P, B) :-
+game_over2(_, B) :-
     blank_mark(E),
     \+ (between(1, 42, S), square(B, S, E)). %%% game is over if board is full
 
@@ -304,7 +304,7 @@ make_move2(computer, P, B, B2) :-
     positive_infinity(Beta),   % or a suitably large positive number
     Depth = 5,    % for example, to set the depth of search to 4 levels
 
-    minimax_ab(B, M, Depth, Alpha, Beta, BestMove, BestScore),
+    minimax_ab(B, M, Depth, Alpha, Beta, BestMove, _),
 
     (BestMove == null ->
         findall(Move, valid_move(Move, B), PossibleMoves),
@@ -410,7 +410,7 @@ output_winner(B) :-
     !
     .
 
-output_winner(B) :-
+output_winner(_) :-
     write('No winner.')
     .
 
@@ -422,7 +422,7 @@ print_line(Line) :-
 print_col(Col) :- format("~w ", [Col]).
 
 
-output_square(B, S, M) :-
+output_square(_, _, M) :-
     write(' '),
     (blank_mark(M) -> write('.')
     ; M = 'x' -> write_red(M)
@@ -455,7 +455,7 @@ output_board(B) :-
 
 output_board([], _).
 output_board([H|T], N) :-
-    output_row(B, H, N),
+    output_row(_, H, N),
     (T \= [] -> write('') ; true), nl, % ligne de séparation
     N1 is N + 1,
     output_board(T, N1).
@@ -493,7 +493,7 @@ set_item(L, N, V, L2) :-
     set_item2(L, N, V, 1, L2)
         .
 
-set_item2( [], N, V, A, L2) :-
+set_item2( [], N, _, _, L2) :-
     N == -1,
     L2 = []
     .
@@ -702,7 +702,7 @@ best_move_ab(Board, [Move|Moves], Player, Depth, Alpha, Beta, CurrentBestMove, C
     )
     .
 
-update_best_move(Player, Move, Score, CurrentBestMove, CurrentBestScore, NextBestMove, NextBestScore) :-
+update_best_move(Player, Move, Score, _, CurrentBestScore, NextBestMove, NextBestScore) :-
     better_score(Player, Score, CurrentBestScore),
     !,
     NextBestMove = Move,
