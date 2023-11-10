@@ -299,10 +299,9 @@ make_move2(computer, P, B, B2) :-
     write('Computer is thinking about next move...'),
     player_mark(P, M),
 
-    % Set initial values for Alpha and Beta
-    negative_infinity(Alpha), % or a suitably large negative number
-    positive_infinity(Beta),   % or a suitably large positive number
-    Depth = 5,    % for example, to set the depth of search to 4 levels
+    negative_infinity(Alpha),
+    positive_infinity(Beta),
+    Depth = 5,
 
     minimax_ab(B, M, Depth, Alpha, Beta, BestMove, _),
 
@@ -318,8 +317,6 @@ make_move2(computer, P, B, B2) :-
     ;   % If the BestMove is not null, use it as the final move
         FinalMove = BestMove
     ),
-    % Now, use FinalMove with make_move3
-    % Make sure FinalMove is not null before making a move
     (FinalMove \== null ->
 
         make_move3(M, FinalMove, B, B2),
@@ -331,7 +328,7 @@ make_move2(computer, P, B, B2) :-
         write(FinalMove),
         write('.'),
         nl,nl
-    ;   % Handle the case where FinalMove is null (no moves left)
+    ; 
         write('No valid moves to execute.'), nl,
         goodbye
     ).
@@ -343,11 +340,9 @@ make_move2(computer, P, B, B2) :-
 % moves
 %.......................................
 % retrieves a list of available columns
-%
+
 
 % Check if a move is valid (the column is not full).
-% Takes the nth1 column of the board
-% And checks if there is an empty cell in it.
 valid_move(S, Board) :-
     transpose(Board,TransposedBoard),
     nth1(S, TransposedBoard, Column),
@@ -487,7 +482,7 @@ append([H|T1], L2, [H|T3]) :- append(T1, L2, T3).
 %.......................................
 % Given a list L, replace the item at position N with V
 % return the new list in list L2
-%
+
 
 set_item(L, N, V, L2) :-
     set_item2(L, N, V, 1, L2)
@@ -534,20 +529,20 @@ score_line(_, _, 0).
 % Predicate to calculate the score for a diagonal going from top-left to bottom-right
 diagonal_score_down(Board, Player, Score) :-
     findall(S, (
-        between(1, 3, StartRow),  % The start row for the diagonal can be from 1 to 3
-        between(1, 4, StartCol),  % The start column for the diagonal can be from 1 to 4
-        diagonal_cells(Board, StartRow, StartCol, 1, 1, Cells), % Collect the four cells in the diagonal
-        score_line(Player, Cells, S)  % Calculate the score for the line
+        between(1, 3, StartRow),  
+        between(1, 4, StartCol), 
+        diagonal_cells(Board, StartRow, StartCol, 1, 1, Cells),
+        score_line(Player, Cells, S) 
     ), Scores),
     sum_list(Scores, Score).
 
 % Predicate to calculate the score for a diagonal going from bottom-left to top-right
 diagonal_score_up(Board, Player, Score) :-
     findall(S, (
-        between(4, 6, StartRow),  % The start row for the diagonal can be from 4 to 6
-        between(1, 4, StartCol),  % The start column for the diagonal can be from 1 to 4
-        diagonal_cells(Board, StartRow, StartCol, -1, 1, Cells), % Collect the four cells in the diagonal
-        score_line(Player, Cells, S)  % Calculate the score for the line
+        between(4, 6, StartRow), 
+        between(1, 4, StartCol), 
+        diagonal_cells(Board, StartRow, StartCol, -1, 1, Cells),
+        score_line(Player, Cells, S) 
     ), Scores),
     sum_list(Scores, Score).
 
@@ -561,8 +556,7 @@ diagonal_cells(Board, Row, Col, RowInc, ColInc, [Cell1, Cell2, Cell3, Cell4]) :-
     NextRow3 is NextRow2 + RowInc, NextCol3 is NextCol2 + ColInc,
     cell(Board, NextRow3, NextCol3, Cell4).
 
-% Score calculation based on existing score_line predicates
-% It sums the scores for diagonals in both directions
+% Diagonal score
 total_diagonal_score(Board, Player, TotalScore) :-
     diagonal_score_down(Board, Player, ScoreDown),
     diagonal_score_up(Board, Player, ScoreUp),
@@ -616,13 +610,12 @@ utility3(Board, Player, Score) :-
     vertical_score(Board, Player, VertScore),
     total_diagonal_score(Board, Player, DiagScore),
     center_score(Board, Player, CenterScore),
-    maplist(number, [HorizScore, VertScore, DiagScore, CenterScore]),  % This ensures all are numbers
+    maplist(number, [HorizScore, VertScore, DiagScore, CenterScore]),
     Score is HorizScore + VertScore + DiagScore + CenterScore.
 
 utility4(Board, PlayerX, PlayerO, NewScore) :-
     utility3(Board, PlayerX, ScoreX),  
     utility3(Board, PlayerO, ScoreO),
-    % Addition because the utility for X is positive and the utility for O is negative 
     NewScore is ScoreX - ScoreO.
 
 
