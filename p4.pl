@@ -513,37 +513,21 @@ set_item2( [H|T1], N, V, A, [H|T2] ) :-
 % Utility 3
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-score_line('x', ['x','x','x','x'], 1000) :- !.
-score_line('x', ['x','x','x','e'], 100) :- !.
-score_line('x', ['x','x','e','x'], 100) :- !.
-score_line('x', ['x','e','x','x'], 100) :- !.
-score_line('x', ['e','x','x','x'], 100) :- !.
-score_line('x', ['x','x','e','e'], 10) :- !.
-score_line('x', ['x','e','x','e'], 10) :- !.
-score_line('x', ['x','e','e','x'], 10) :- !.
-score_line('x', ['e','x','x','e'], 10) :- !.
-score_line('x', ['e','x','e','x'], 10) :- !.
-score_line('x', ['e','e','x','x'], 10) :- !.
-score_line('x', ['x','e','e','e'], 1) :- !.
-score_line('x', ['e','x','e','e'], 1) :- !.
-score_line('x', ['e','e','x','e'], 1) :- !.
-score_line('x', ['e','e','e','x'], 1) :- !.
-
-score_line('o', ['o','o','o','o'], -1000) :- !.
-score_line('o', ['o','o','o','e'], -100) :- !.
-score_line('o', ['o','o','e','o'], -100) :- !.
-score_line('o', ['o','e','o','o'], -100) :- !.
-score_line('o', ['e','o','o','o'], -100) :- !.
-score_line('o', ['o','o','e','e'], -10) :- !.
-score_line('o', ['o','e','o','e'], -10) :- !.
-score_line('o', ['o','e','e','o'], -10) :- !.
-score_line('o', ['e','o','o','e'], -10) :- !.
-score_line('o', ['e','o','e','o'], -10) :- !.
-score_line('o', ['e','e','o','o'], -10) :- !.
-score_line('o', ['o','e','e','e'], -1) :- !.
-score_line('o', ['e','o','e','e'], -1) :- !.
-score_line('o', ['e','e','o','e'], -1) :- !.
-score_line('o', ['e','e','e','o'], -1) :- !.
+score_line(M, [M,M,M,M], 1000) :- !.
+score_line(M, [M,M,M,'e'], 100) :- !.
+score_line(M, [M,M,'e',M], 100) :- !.
+score_line(M, [M,'e',M,M], 100) :- !.
+score_line(M, ['e',M,M,M], 100) :- !.
+score_line(M, [M,M,'e','e'], 10) :- !.
+score_line(M, [M,'e',M,'e'], 10) :- !.
+score_line(M, [M,'e','e',M], 10) :- !.
+score_line(M, ['e',M,M,'e'], 10) :- !.
+score_line(M, ['e',M,'e',M], 10) :- !.
+score_line(M, ['e','e',M,M], 10) :- !.
+score_line(M, [M,'e','e','e'], 1) :- !.
+score_line(M, ['e',M,'e','e'], 1) :- !.
+score_line(M, ['e','e',M,'e'], 1) :- !.
+score_line(M, ['e','e','e',M], 1) :- !.
 
 score_line(_, _, 0).
 
@@ -639,7 +623,7 @@ utility4(Board, PlayerX, PlayerO, NewScore) :-
     utility3(Board, PlayerX, ScoreX),  
     utility3(Board, PlayerO, ScoreO),
     % Addition because the utility for X is positive and the utility for O is negative 
-    NewScore is ScoreX + ScoreO.
+    NewScore is ScoreX - ScoreO.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -655,7 +639,7 @@ better_score(Player, Score1, Score2) :-
 %.......................................
 
 % Calculate score for the given board and player
-minimax_score(Board, Score) :-
+minimax_score(Board,Score) :-
     utility4(Board, 'x', 'o', Score).
 
 %.......................................
@@ -666,10 +650,15 @@ minimax_score(Board, Score) :-
 % Minimax algorithm with alpha-beta pruning and limited depth
 minimax_ab(Board, Player, Depth, Alpha, Beta, BestMove, BestScore) :-
     
-    (Depth = 0 ->
+    % Check for a winner on the current board
+    (win(Player, Board) -> 
+        (maximizing(Player) -> BestScore = 1000000; BestScore = -1000000),
+        BestMove = null
+    ; Depth = 0 ->
+        % If depth is 0, evaluate the board
         minimax_score(Board, BestScore),
-        BestMove = null  % No move because we re at leaf node
-    ;
+        BestMove = null
+    ; 
         findall(Move, valid_move(Move, Board), MovesUnfiltered),
         list_to_set(MovesUnfiltered, Moves),
         (maximizing(Player) ->
