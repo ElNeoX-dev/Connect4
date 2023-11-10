@@ -69,8 +69,7 @@ goodbye :-
 process_play_again_response('y') :-
     run.
 
-process_play_again_response('n') :-
-    true.
+process_play_again_response('n') .
 
 read_play_again(V) :-
     nl,
@@ -280,11 +279,10 @@ make_move2(human, P, B, B2) :-
     nl,
     write('Player '),
     write(P),
-    write(' move? '),
+    write(' move (1 to 7) ? '),
     read(S),
+    nl,
 
-    blank_mark(E),
-    square(B, S, E),
     player_mark(P, M),
 
     (S >= 1, S =< 7,valid_move(S,B) ->  % Check if move is valid
@@ -300,9 +298,6 @@ make_move2(computer, P, B, B2) :-
     nl,
     write('Computer is thinking about next move...'),
     player_mark(P, M),
-
-    % minimax(B, M, S, U),
-    % move(B,S,M,B2), 
 
     % Set initial values for Alpha and Beta
     negative_infinity(Alpha), % or a suitably large negative number
@@ -436,9 +431,6 @@ output_square(B, S, M) :-
     ),
     write(' '), !.
 
-% Si E est un marqueur pour une case vide.
-blank_mark(E) :- var(E).
-
 % Afficher une seule ligne.
 output_row(_, [], _).
 output_row(B, [H|T], N) :-
@@ -555,11 +547,6 @@ score_line('o', ['e','e','e','o'], -1) :- !.
 
 score_line(_, _, 0).
 
-% Utility predicates to get cell content based on row and column
-cell2(Board, Row, Col, Cell) :-
-    nth1(Row, Board, BoardRow),
-    nth1(Col, BoardRow, Cell).
-
 % Predicate to calculate the score for a diagonal going from top-left to bottom-right
 diagonal_score_down(Board, Player, Score) :-
     findall(S, (
@@ -582,13 +569,13 @@ diagonal_score_up(Board, Player, Score) :-
 
 % Helper predicate to collect cells from a diagonal
 diagonal_cells(Board, Row, Col, RowInc, ColInc, [Cell1, Cell2, Cell3, Cell4]) :-
-    cell2(Board, Row, Col, Cell1),
+    cell(Board, Row, Col, Cell1),
     NextRow1 is Row + RowInc, NextCol1 is Col + ColInc,
-    cell2(Board, NextRow1, NextCol1, Cell2),
+    cell(Board, NextRow1, NextCol1, Cell2),
     NextRow2 is NextRow1 + RowInc, NextCol2 is NextCol1 + ColInc,
-    cell2(Board, NextRow2, NextCol2, Cell3),
+    cell(Board, NextRow2, NextCol2, Cell3),
     NextRow3 is NextRow2 + RowInc, NextCol3 is NextCol2 + ColInc,
-    cell2(Board, NextRow3, NextCol3, Cell4).
+    cell(Board, NextRow3, NextCol3, Cell4).
 
 % Score calculation based on existing score_line predicates
 % It sums the scores for diagonals in both directions
@@ -637,8 +624,7 @@ consecutive_diagonal_cells_up_right(Board, Row, Col, Cells) :-
 
 cell(Board, Row, Col, Player) :-
     nth1(Row, Board, BoardRow),
-    nth1(Col, BoardRow, Cell),
-    Cell = Player.
+    nth1(Col, BoardRow, Player).
 
 % Overall utility score
 utility3(Board, Player, Score) :-
@@ -659,51 +645,18 @@ utility4(Board, PlayerX, PlayerO, NewScore) :-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% AI
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   
-%.......................................
-% minimax
-%.......................................
-
-% Minimax algorithm
-minimax(Board, Player, BestMove, BestScore) :-
-    findall(Move, valid_move(Move, Board), MovesUnfiltered),
-    list_to_set(MovesUnfiltered, Moves),  % Removes duplicates while preserving the order.
-    
-    InitialScore is 0,
-    number(InitialScore),
-
-    best_move(Board, Moves, Player, null, InitialScore, BestMove, BestScore).
-
-best_move(_, [], _, BestMove, BestScore, BestMove, BestScore) .
-
-best_move(Board, [Move|Moves], Player, CurrentBestMove, CurrentBestScore, BestMove, BestScore) :-
-    % move(Board, Move, Player, NewBoard),
-    make_move3(Player, Move, Board, NewBoard),
-    minimax_score(NewBoard, Player, Score),
-    better_move(Player, Move, Score, CurrentBestMove, CurrentBestScore, NextBestMove, NextBestScore),
-    best_move(Board, Moves, Player, NextBestMove, NextBestScore, BestMove, BestScore).
 
 % Check if the given score is better than the current best score
 better_score(Player, Score1, Score2) :-
     (maximizing(Player) -> Score1 > Score2 ; minimizing(Player) -> Score1 < Score2).
 
-% Determine if the current move is better than the best one so far
-better_move(Player, Move1, Score1, CurrentBestMove, CurrentBestScore, Move1, Score1) :-
-    better_score(Player, Score1, CurrentBestScore).
-
-better_move(Player, _, Score1, CurrentBestMove, CurrentBestScore, CurrentBestMove, CurrentBestScore) :-
-    \+ better_score(Player, Score1, CurrentBestScore).
-
-
 %.......................................
 % minimax_score
 %.......................................
 
-
 % Calculate score for the given board and player
-minimax_score(Board, Player, Score) :-
+minimax_score(Board, Score) :-
     utility4(Board, 'x', 'o', Score).
-
 
 %.......................................
 % alpha beta
@@ -714,7 +667,7 @@ minimax_score(Board, Player, Score) :-
 minimax_ab(Board, Player, Depth, Alpha, Beta, BestMove, BestScore) :-
     
     (Depth = 0 ->
-        minimax_score(Board, Player, BestScore),
+        minimax_score(Board, BestScore),
         BestMove = null  % No move because we re at leaf node
     ;
         findall(Move, valid_move(Move, Board), MovesUnfiltered),
@@ -754,6 +707,7 @@ update_best_move(Player, Move, Score, CurrentBestMove, CurrentBestScore, NextBes
     !,
     NextBestMove = Move,
     NextBestScore = Score.
+
 update_best_move(_, _, _, CurrentBestMove, CurrentBestScore, CurrentBestMove, CurrentBestScore).
 
 
